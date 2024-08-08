@@ -23,10 +23,15 @@
 #  else
 #    define KEEN_API_EXPORT KEEN_DECL_IMPORT
 #  endif
-#  if defined(KEEN_BUILD_TRADER_LIB)
-#    define KEEN_TRADER_EXPORT KEEN_DECL_EXPORT
+#  if defined(KEEN_BUILD_EVENT_LIB)
+#    define KEEN_EVENT_EXPORT KEEN_DECL_EXPORT
 #  else
-#    define KEEN_TRADER_EXPORT KEEN_DECL_IMPORT
+#    define KEEN_EVENT_EXPORT KEEN_DECL_IMPORT
+#  endif
+#  if defined(KEEN_BUILD_ENGINE_LIB)
+#    define KEEN_ENGINE_EXPORT KEEN_DECL_EXPORT
+#  else
+#    define KEEN_ENGINE_EXPORT KEEN_DECL_IMPORT
 #  endif
 #  if defined(KEEN_BUILD_EXCHANGE_LIB)
 #    define KEEN_EXCHANGE_EXPORT KEEN_DECL_EXPORT
@@ -40,7 +45,7 @@
 #  endif
 #else
 #  define KEEN_API_EXPORT
-#  define KEEN_TRADER_EXPORT
+#  define KEEN_ENGINE_EXPORT
 #  define KEEN_EXCHANGE_EXPORT
 #  define KEEN_APP_EXPORT
 #endif

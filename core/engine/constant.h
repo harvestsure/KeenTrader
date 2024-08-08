@@ -139,12 +139,12 @@ namespace Keen
             TICK
         };
 
-        extern KEEN_TRADER_EXPORT AString str_direction(Direction direction);
-		extern KEEN_TRADER_EXPORT AString exchange_to_str(Exchange);
-        extern KEEN_TRADER_EXPORT AString interval_to_str(Interval);
+        extern KEEN_ENGINE_EXPORT AString str_direction(Direction direction);
+		extern KEEN_ENGINE_EXPORT AString exchange_to_str(Exchange);
+        extern KEEN_ENGINE_EXPORT AString interval_to_str(Interval);
 
-		extern KEEN_TRADER_EXPORT Exchange str_to_exchange(AString);
-		extern KEEN_TRADER_EXPORT Interval str_to_interval(AString);
+		extern KEEN_ENGINE_EXPORT Exchange str_to_exchange(AString);
+		extern KEEN_ENGINE_EXPORT Interval str_to_interval(AString);
 
 	}
 }

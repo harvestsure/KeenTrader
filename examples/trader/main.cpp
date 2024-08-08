@@ -68,7 +68,7 @@ int main()
 #endif
 	ConsoleSignalHandler::Register();
 
-	EventEmitter* event_emitter = new EventEmitter;
+	EventEmitter* event_emitter = MakeEventEmitter();
 	TradeEngine* trade_engine = new TradeEngine(event_emitter);
 
 	auto okex = trade_engine->add_exchange<okx::OkxExchange>();
@@ -84,43 +84,34 @@ int main()
 #ifdef _DEBUG
 	Json SETTINGS =
 	{
-		{"API Key", ""},
-		{"Secret Key", ""},
-		{"Passphrase", ""},
-		{"Proxy Host", ""},
-		{"Proxy Port", 0},
-		{"Server", "TEST"}
+		{"api_key", ""},
+		{"secret_key", ""},
+		{"passphrase", ""},
+		{"proxy_host", ""},
+		{"proxy_port", 0},
+		{"server", "test"}
 	};
 #else
 	Json SETTINGS =
 	{
-		{"API Key", ""},
-		{"Secret Key", ""},
-		{"Passphrase", ""},
-		{"Proxy Host", ""},
-		{"Proxy Port", 0},
-		{"Server", "REAL"}
+		{"api_key", ""},
+		{"secret_key", ""},
+		{"passphrase", ""},
+		{"proxy_host", ""},
+		{"proxy_port", 0},
+		{"server", "REAL"}
 	};
 #endif // DEBUG
 
 	trade_engine->connect(SETTINGS, "OKX");
 	trade_engine->write_log("Connecting to OKX interface");
 
+	std::this_thread::sleep_for(std::chrono::seconds(3));
+
 	SubscribeRequest req;
 	req.exchange = Exchange::OKX;
-	req.symbol = "LDO-USDT-SWAP";
-	// okex->subscribe(req);
-
-	SETTINGS =
-	{
-		{"key", ""},
-		{"secret", ""},
-		{"session_number", 3},
-		{"proxy_host", ""},
-		{"proxy_port", 0} };
-
-	// trade_engine->connect(SETTINGS, "BINANCE");
-	// trade_engine->write_log("Connecting to BINANCE interface");
+	req.symbol = "ETH-USDT-SWAP";
+	okex->subscribe(req);
 
 	std::thread t([=] {
 		std::this_thread::sleep_for(std::chrono::seconds(1));

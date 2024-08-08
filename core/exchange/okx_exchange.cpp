@@ -106,12 +106,12 @@ namespace Keen
 			{
 				default_setting =
 				{
-					{ "API Key", "" },
-					{ "Secret Key", "" },
-					{ "Passphrase", "" },
-					{ "Proxy Host", "" },
-					{ "Proxy Port", 0 },
-					{ "Server", "" } //["REAL", "TEST"]
+					{ "api_key", "" },
+					{ "secret_key", "" },
+					{ "passphrase", "" },
+					{ "proxy_host", "" },
+					{ "proxy_port", 0 },
+					{ "server", "" } //["REAL", "TEST"]
 				};
 
 				exchange = Exchange::OKX;
@@ -130,13 +130,13 @@ namespace Keen
 
 			void OkxExchange::connect(const Json& setting)
 			{
-				AString key = setting.value("API Key", "");
-				AString secret = setting.value("Secret Key", "");
-				AString passphrase = setting.value("Passphrase", "");
+				AString key = setting.value("api_key", "");
+				AString secret = setting.value("secret_key", "");
+				AString passphrase = setting.value("passphrase", "");
 
-				AString proxy_host = setting.value("Proxy Host", "");
-				uint16_t proxy_port = setting.value("Proxy Port", 0);
-				AString server = setting.value("Server", "");
+				AString proxy_host = setting.value("proxy_host", "");
+				uint16_t proxy_port = setting.value("proxy_port", 0);
+				AString server = setting.value("server", "");
 
 				this->rest_api->connect(key,
 					secret,
@@ -365,7 +365,7 @@ namespace Keen
 			{
 				AString server_time = DateTimeToString(DateTimeFromStringTime(packet["data"][0]["ts"]));
 				AString local_time = DateTimeToString(currentDateTime());
-				AString msg = Printf("Server time: %s, local time: %s", server_time.c_str(), local_time.c_str());
+				AString msg = Printf("server time: %s, local time: %s", server_time.c_str(), local_time.c_str());
 				this->exchange->write_log(msg);
 			}
 

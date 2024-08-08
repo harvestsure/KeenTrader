@@ -13,7 +13,7 @@ namespace Keen
 		class BaseExchange;
 		class OffsetConverter;
 
-		class KEEN_TRADER_EXPORT TradeEngine
+		class KEEN_ENGINE_EXPORT TradeEngine
 		{
 		public:
 
@@ -110,7 +110,7 @@ namespace Keen
 		};
 
 
-		class KEEN_TRADER_EXPORT BaseEngine
+		class KEEN_ENGINE_EXPORT BaseEngine
 		{
 		public:
 			BaseEngine(
@@ -128,7 +128,7 @@ namespace Keen
 			AString engine_name;
 		};
 
-		class KEEN_TRADER_EXPORT LogEngine : public BaseEngine
+		class KEEN_ENGINE_EXPORT LogEngine : public BaseEngine
 		{
 		public:
 

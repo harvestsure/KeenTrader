@@ -10,7 +10,7 @@ namespace Keen
 
 		class PositionHolding;
 
-		class KEEN_TRADER_EXPORT OffsetConverter
+		class KEEN_ENGINE_EXPORT OffsetConverter
 		{
 		public:
 			OffsetConverter(TradeEngine* trade_engine);

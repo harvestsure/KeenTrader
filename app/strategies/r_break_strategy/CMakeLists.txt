@@ -27,9 +27,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${libs_loc}/nlohmann_json/include
 )
 
-set(ADDITIONAL_LIBRARY_DEPENDENCIES
+target_link_libraries(${PROJECT_NAME} PRIVATE
     api    
+    event
     engine
     cta_strategy
 )
-target_link_libraries(${PROJECT_NAME} PUBLIC ${ADDITIONAL_LIBRARY_DEPENDENCIES})

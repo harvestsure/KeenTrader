@@ -78,30 +78,30 @@ namespace Keen
 			return result;
 		}
 
-		extern KEEN_TRADER_EXPORT std::tuple<AString, Exchange> extract_kt_symbol(AString kt_symbol);
+		extern KEEN_ENGINE_EXPORT std::tuple<AString, Exchange> extract_kt_symbol(AString kt_symbol);
 
-		extern KEEN_TRADER_EXPORT AString _get_trader_dir(AString temp_name);
+		extern KEEN_ENGINE_EXPORT AString _get_trader_dir(AString temp_name);
 
-		extern KEEN_TRADER_EXPORT AString get_file_path(AString filename);
+		extern KEEN_ENGINE_EXPORT AString get_file_path(AString filename);
 
-		extern KEEN_TRADER_EXPORT AString get_folder_path(AString folder_name);
+		extern KEEN_ENGINE_EXPORT AString get_folder_path(AString folder_name);
 
-		extern KEEN_TRADER_EXPORT float round_to(float value, float target);
+		extern KEEN_ENGINE_EXPORT float round_to(float value, float target);
 
-		extern KEEN_TRADER_EXPORT float floor_to(float value, float target);
+		extern KEEN_ENGINE_EXPORT float floor_to(float value, float target);
 
-		extern KEEN_TRADER_EXPORT float ceil_to(float value, float target);
+		extern KEEN_ENGINE_EXPORT float ceil_to(float value, float target);
 
-		extern KEEN_TRADER_EXPORT float JsonToFloat(const Json& data);
+		extern KEEN_ENGINE_EXPORT float JsonToFloat(const Json& data);
 
-		extern KEEN_TRADER_EXPORT int JsonToInt(const Json& data);
+		extern KEEN_ENGINE_EXPORT int JsonToInt(const Json& data);
 
-		extern KEEN_TRADER_EXPORT Json load_json(AString filename);
+		extern KEEN_ENGINE_EXPORT Json load_json(AString filename);
 
-		extern KEEN_TRADER_EXPORT bool save_json(AString filename, const Json& data);
+		extern KEEN_ENGINE_EXPORT bool save_json(AString filename, const Json& data);
 
 
-		class KEEN_TRADER_EXPORT BarGenerator
+		class KEEN_ENGINE_EXPORT BarGenerator
 		{
 		public:
 			BarGenerator(

@@ -7,7 +7,6 @@ set(Header_Files
     "constant.h"
     "converter.h"
     "engine.h"
-    "event.h"
     "exchange.h"
     "object.h"
     "settings.h"
@@ -20,7 +19,6 @@ set(Source_Files
     "constant.cpp"
     "converter.cpp"
     "engine.cpp"
-    "event.cpp"
     "exchange.cpp"
     "object.cpp"
     "settings.cpp"
@@ -36,7 +34,7 @@ set(ALL_FILES
 add_library(${PROJECT_NAME} SHARED ${ALL_FILES})
 init_target(${PROJECT_NAME} "core")
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE KEEN_BUILD_TRADER_LIB)
+target_compile_definitions(${PROJECT_NAME} PRIVATE KEEN_BUILD_ENGINE_LIB)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${src_loc}/core
@@ -45,12 +43,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${libs_loc}/nlohmann_json/include
 )
 
-add_dependencies(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME} PRIVATE
     api
+    event
 )
-
-set(ADDITIONAL_LIBRARY_DEPENDENCIES
-    api
-)
-
-target_link_libraries(${PROJECT_NAME} PUBLIC ${ADDITIONAL_LIBRARY_DEPENDENCIES})
