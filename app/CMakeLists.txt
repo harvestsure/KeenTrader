@@ -1,0 +1,2 @@
+add_subdirectory(cta_strategy)
+add_subdirectory(strategies)
