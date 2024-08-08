@@ -1,0 +1,26 @@
+[submodule "thirdParty/libhv"]
+
+[submodule "libraries/websocketpp"]
+	path = libraries/websocketpp
+	url = https://github.com/zaphoyd/websocketpp.git
+[submodule "libraries/asio"]
+	path = libraries/asio
+	url = https://github.com/chriskohlhoff/asio.git
+[submodule "libraries/nlohmann_json"]
+	path = libraries/nlohmann_json
+	url = https://github.com/nlohmann/json.git
+[submodule "libraries/cpp-httplib"]
+	path = libraries/cpp-httplib
+	url = https://github.com/yhirose/cpp-httplib.git
+[submodule "libraries/date"]
+	path = libraries/date
+	url = https://github.com/HowardHinnant/date.git
+[submodule "libraries/dylib"]
+	path = libraries/dylib
+	url = https://github.com/martin-olivier/dylib.git
+[submodule "libraries/fmt"]
+	path = libraries/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "libraries/magic_enum"]
+	path = libraries/magic_enum
+	url = https://github.com/Neargye/magic_enum.git
