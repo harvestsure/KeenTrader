@@ -9,7 +9,7 @@ namespace Keen
 		class Event;
 		class EventEmitter;
 
-		class KEEN_TRADER_EXPORT BaseExchange
+		class KEEN_ENGINE_EXPORT BaseExchange
 		{
 			friend class TradeEngine;
 		public:
@@ -68,7 +68,7 @@ namespace Keen
 		};
 
 
-		class KEEN_TRADER_EXPORT LocalOrderManager
+		class KEEN_ENGINE_EXPORT LocalOrderManager
 		{
 		public:
 			LocalOrderManager(BaseExchange* exchange, AString order_prefix = "");

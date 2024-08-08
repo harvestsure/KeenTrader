@@ -1,7 +1,7 @@
 #include <api/Globals.h>
 #include <engine/engine.h>
 #include <engine/utility.h>
-#include <engine/event.h>
+#include <event/event.h>
 #include "binance_exchange.h"
 #include "algo_hmac.h"
 #include "utils.h"
@@ -77,7 +77,6 @@ namespace Keen
 			{
 				InitGlobals();
 
-				// Constructor//
 				default_setting = {
 					{"key", ""},
 					{"secret", ""},

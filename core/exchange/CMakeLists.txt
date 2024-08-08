@@ -31,14 +31,11 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${libs_loc}/nlohmann_json/include
 )
 
-add_dependencies(${PROJECT_NAME} 
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    api
+    event
     engine
 )
-
-set(ADDITIONAL_LIBRARY_DEPENDENCIES
-    engine
-)
-target_link_libraries(${PROJECT_NAME} PUBLIC ${ADDITIONAL_LIBRARY_DEPENDENCIES})
 
 
 if(OPENSSL_FOUND)

@@ -51,9 +51,9 @@ namespace Keen
 			StopOrderStatus status = StopOrderStatus::WAITING;
 		};
 
-		extern KEEN_APP_EXPORT const AString EVENT_CTA_LOG;
-		extern KEEN_APP_EXPORT const AString EVENT_CTA_STRATEGY;
-		extern KEEN_APP_EXPORT const AString EVENT_CTA_STOPORDER;
+		extern KEEN_APP_EXPORT const char* EVENT_CTA_LOG;
+		extern KEEN_APP_EXPORT const char* EVENT_CTA_STRATEGY;
+		extern KEEN_APP_EXPORT const char* EVENT_CTA_STOPORDER;
 
 		extern std::map<Interval, std::chrono::minutes> INTERVAL_DELTA_MAP;
 	}

@@ -8,7 +8,7 @@ namespace Keen
 	{
 		class CancelRequest;
 
-		class KEEN_TRADER_EXPORT TickData
+		class KEEN_ENGINE_EXPORT TickData
 		{
 		public:
 			AString symbol;
@@ -61,7 +61,7 @@ namespace Keen
 			}
 		};
 
-		class KEEN_TRADER_EXPORT BarData
+		class KEEN_ENGINE_EXPORT BarData
 		{
 		public:
 			AString exchange_name;
@@ -85,7 +85,7 @@ namespace Keen
 			}
 		};
 
-		class KEEN_TRADER_EXPORT CancelRequest
+		class KEEN_ENGINE_EXPORT CancelRequest
 		{
 		public:
 			AString orderid;
@@ -100,7 +100,7 @@ namespace Keen
 			}
 		};
 
-		class KEEN_TRADER_EXPORT OrderData
+		class KEEN_ENGINE_EXPORT OrderData
 		{
 		public:
 			AString symbol;
@@ -133,7 +133,7 @@ namespace Keen
 			}
 		};
 
-		class KEEN_TRADER_EXPORT TradeData
+		class KEEN_ENGINE_EXPORT TradeData
 		{
 		public:
 			AString symbol;
@@ -161,7 +161,7 @@ namespace Keen
 			}
 		};
 
-		class KEEN_TRADER_EXPORT PositionData
+		class KEEN_ENGINE_EXPORT PositionData
 		{
 		public:
 			AString symbol;
@@ -186,7 +186,7 @@ namespace Keen
 			}
 		};
 
-		class KEEN_TRADER_EXPORT AccountData
+		class KEEN_ENGINE_EXPORT AccountData
 		{
 		public:
 			AString accountid;
@@ -208,7 +208,7 @@ namespace Keen
 		};
 
 
-		class KEEN_TRADER_EXPORT LogData
+		class KEEN_ENGINE_EXPORT LogData
 		{
 		public:
 			AString msg;
@@ -221,7 +221,7 @@ namespace Keen
 		};
 
 
-		class KEEN_TRADER_EXPORT ContractData
+		class KEEN_ENGINE_EXPORT ContractData
 		{
 		public:
 			AString symbol;
@@ -289,7 +289,7 @@ namespace Keen
 		};
 
 
-		class KEEN_TRADER_EXPORT SubscribeRequest
+		class KEEN_ENGINE_EXPORT SubscribeRequest
 		{
 		public:
 			AString symbol;
@@ -304,7 +304,7 @@ namespace Keen
 		};
 
 
-		class KEEN_TRADER_EXPORT OrderRequest
+		class KEEN_ENGINE_EXPORT OrderRequest
 		{
 		public:
 			AString symbol;
@@ -330,7 +330,7 @@ namespace Keen
 		};
 
 
-		class KEEN_TRADER_EXPORT HistoryRequest
+		class KEEN_ENGINE_EXPORT HistoryRequest
 		{
 		public:
 			AString symbol;

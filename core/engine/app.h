@@ -8,7 +8,7 @@ namespace Keen
 		class TradeEngine;
 		class BaseEngine;
 
-		class KEEN_TRADER_EXPORT BaseApp
+		class KEEN_ENGINE_EXPORT BaseApp
 		{
 		public:
 			BaseApp();
