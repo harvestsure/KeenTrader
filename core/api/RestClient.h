@@ -23,10 +23,7 @@ namespace Keen
 
 			void join();
 
-			template <typename Response>
-			Sender::AsyncRequestBuilder<Response> async_request(Request& request) {
-				return _sender->request<Response>(this->sign(request));
-			}
+			void request(Request& request);
 
 			Response request(
 				AString method,

@@ -40,6 +40,40 @@ namespace Keen
 		{
 		}
 
+		void RestClient::request(Request& request)
+		{
+			Response res;
+			_sender->request<ResString>(this->sign(request))
+				.done([=](const ResString& response)
+				{
+					try
+					{
+						request.callback(Json::parse(response.serialize()), request);
+					}
+					catch (const std::exception& e)
+					{
+						if (request.on_error)
+							request.on_error(e, request);
+						else
+							this->on_error(e, request);
+					}
+				})
+				.fail([=](const Error& error) {
+					if (request.on_failed)
+						request.on_failed(error.status(), request);
+					else
+						this->on_failed(error.status(), request);
+				})
+				.error([=](const std::exception& e)
+				{
+					if (request.on_error)
+						request.on_error(e, request);
+					else
+						this->on_error(e, request);
+				})
+				.send();
+		}
+
 		Response RestClient::request(
 			AString method,
 			AString path,
@@ -59,7 +93,7 @@ namespace Keen
 				.data = data
 			};
 
-			this->async_request<ResString>(request)
+			_sender->request<ResString>(request)
 				.done([&](const ResString& response) {
 					//res = response;
 					promise.set_value();
@@ -88,16 +122,12 @@ namespace Keen
 
 		void RestClient::on_failed(int status_code, const Request& request)
 		{
-			LOGERROR("%s", request.__str__().c_str());
-
-			printf("RestClient on failed ----------");
-			printf("%s", request.__str__().c_str());
+			LOGERROR("RestClient on failed ----------\n%s", request.__str__().c_str());
 		}
 
 		void RestClient::on_error(const std::exception& ex, const Request& request)
 		{
-			printf("RestClient on error ----------");
-			printf("%s", this->exception_detail(ex, request).c_str());
+			LOGERROR("RestClient on error ----------\n%s", this->exception_detail(ex, request).c_str());
 		}
 
 		AString RestClient::exception_detail(const std::exception& ex, const Request& request)

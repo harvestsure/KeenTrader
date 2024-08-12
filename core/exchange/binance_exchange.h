@@ -98,25 +98,25 @@ namespace Keen
 
 				void keep_user_stream();
 
-				void on_query_time(const Json& data);
+				void on_query_time(const Json& data, const Request& request);
 
-				void on_query_account(const Json& data);
+				void on_query_account(const Json& data, const Request& request);
 
-				void on_query_order(const Json& data);
+				void on_query_order(const Json& data, const Request& request);
 
-				void on_query_contract(const Json& data);
+				void on_query_contract(const Json& data, const Request& request);
 
-				void on_send_order(const Json& data);
+				void on_send_order(const Json& data, const Request& request);
 
-				void on_send_order_failed(const Error& error, const Request& request);
+				void on_send_order_failed(int status_code, const Request& request);
 
 				void on_send_order_error(const std::exception& ex, const Request& request);
 
-				void on_cancel_order(const Json& data);
+				void on_cancel_order(const Json& data, const Request& request);
 
-				void on_start_user_stream(const Json& data);
+				void on_start_user_stream(const Json& data, const Request& request);
 
-				void on_keep_user_stream(const Json& data);
+				void on_keep_user_stream(const Json& data, const Request& request);
 
 				std::list<BarData> query_history(HistoryRequest req);
 

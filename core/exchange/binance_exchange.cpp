@@ -268,20 +268,11 @@ namespace Keen
 				Request request{ 
 					.method = "GET",
 					.path = "/api/v1/time",
-					.data = data
+					.data = data,
+					.callback = std::bind(&BinanceRestApi::on_query_time, this, _1, _2)
 				};
 
-				this->async_request<ResJson>(request)
-					.done([&](const ResJson& response) {
-						on_query_time(response.serialize());
-					})
-					.fail([&](const Error& error) {
-						Printf("fail");
-					})
-					.error([&](const std::exception& e) {
-						Printf("error");
-					})
-					.send();
+				this->request(request);
 			}
 
 			void BinanceRestApi::query_account()
@@ -291,20 +282,11 @@ namespace Keen
 				Request request{
 					.method = "GET",
 					.path = "/api/v3/account",
-					.data = data
+					.data = data,
+					.callback = std::bind(&BinanceRestApi::on_query_account, this, _1, _2)
 				};
 
-				this->async_request<ResJson>(request)
-					.done([&](const ResJson& response) {
-						on_query_account(response.serialize());
-					})
-					.fail([&](const Error& error) {
-						Printf("fail");
-					})
-					.error([&](const std::exception& e) {
-						Printf("error");
-					})
-					.send();
+				this->request(request);
 			}
 
 			void BinanceRestApi::query_order()
@@ -314,20 +296,11 @@ namespace Keen
 				Request request{
 					.method = "GET",
 					.path = "/api/v3/openOrders",
-					.data = data
+					.data = data,
+					.callback = std::bind(&BinanceRestApi::on_query_order, this, _1, _2)
 				};
 
-				this->async_request<ResJson>(request)
-					.done([&](const ResJson& response) {
-						on_query_order(response.serialize());
-					})
-					.fail([&](const Error& error) {
-						Printf("fail");
-					})
-					.error([&](const std::exception& e) {
-						Printf("error");
-					})
-					.send();
+				this->request(request);
 			}
 
 			void BinanceRestApi::query_contract()
@@ -337,20 +310,11 @@ namespace Keen
 				Request request{
 					.method = "GET",
 					.path = "/api/v1/exchangeInfo",
-					.data = data
+					.data = data,
+					.callback = std::bind(&BinanceRestApi::on_query_contract, this, _1, _2)
 				};
 
-				this->async_request<ResJson>(request)
-					.done([&](const ResJson& response) {
-						on_query_contract(response.serialize());
-					})
-					.fail([&](const Error& error) {
-						Printf("fail");
-					})
-					.error([&](const std::exception& e) {
-						Printf("error");
-					})
-					.send();
+				this->request(request);
 			}
 
 			int BinanceRestApi::_new_order_id()
@@ -386,20 +350,13 @@ namespace Keen
 					.path = "/api/v3/order",
 					.params = params,
 					.data = data,
-					.extra = order
+					.extra = order,
+					.callback = std::bind(&BinanceRestApi::on_send_order, this, _1, _2),
+					.on_failed = std::bind(&BinanceRestApi::on_send_order_failed, this, _1, _2),
+					.on_error = std::bind(&BinanceRestApi::on_send_order_error, this, _1, _2)
 				};
 
-				this->async_request<ResJson>(request)
-					.done([&](const ResJson& response) {
-						on_send_order(response.serialize());
-					})
-					.fail([&](const Error& error) {
-						on_send_order_failed(error, request);
-					})
-					.error([&](const std::exception& e) {
-						on_send_order_error(e, request);
-					})
-					.send();
+				this->request(request);
 
 				return order.kt_orderid;
 			}
@@ -418,18 +375,11 @@ namespace Keen
 					.path = "/api/v3/order",
 					.params = params,
 					.data = data,
-					.extra = req
+					.extra = req,
+					.callback = std::bind(&BinanceRestApi::on_cancel_order, this, _1, _2)
 				};
 
-				this->async_request<ResJson>(request)
-					.done([&](const ResJson& response) {
-						on_cancel_order(response.serialize());
-					})
-					.fail([&](const Error& error) {
-					})
-					.error([&](const std::exception& e) {
-					})
-					.send();
+				this->request(request);
 			}
 
 			void BinanceRestApi::start_user_stream()
@@ -439,18 +389,11 @@ namespace Keen
 				Request request{
 					.method = "POST",
 					.path = "/api/v1/userDataStream",
-					.data = data
+					.data = data,
+					.callback = std::bind(&BinanceRestApi::on_start_user_stream, this, _1, _2)
 				};
 
-				this->async_request<ResJson>(request)
-					.done([&](const ResJson& response) {
-						on_start_user_stream(response.serialize());
-					})
-					.fail([&](const Error& error) {
-					})
-					.error([&](const std::exception& e) {
-					})
-					.send();
+				this->request(request);
 			}
 
 			void BinanceRestApi::keep_user_stream()
@@ -469,28 +412,21 @@ namespace Keen
 					.method = "PUT",
 					.path = "/api/v1/userDataStream",
 					.params = params,
-					.data = data
+					.data = data,
+					.callback = std::bind(&BinanceRestApi::on_keep_user_stream, this, _1, _2)
 				};
 
-				this->async_request<ResJson>(request)
-					.done([&](const ResJson& response) {
-						on_keep_user_stream(response.serialize());
-					})
-					.fail([&](const Error& error) {
-					})
-					.error([&](const std::exception& e) {
-					})
-					.send();
+				this->request(request);
 			}
 
-			void BinanceRestApi::on_query_time(const Json &data)
+			void BinanceRestApi::on_query_time(const Json &data, const Request& request)
 			{
 				int64_t local_time = currentDateTime().time_since_epoch().count();
 				int64_t server_time = data["serverTime"].get<int64_t>();
 				this->time_offset = int(local_time - server_time);
 			}
 
-			void BinanceRestApi::on_query_account(const Json &data)
+			void BinanceRestApi::on_query_account(const Json &data, const Request& request)
 			{
 				for (Json account_data : data["balances"])
 				{
@@ -508,7 +444,7 @@ namespace Keen
 				this->exchange->write_log("Account funds query successful");
 			}
 
-			void BinanceRestApi::on_query_order(const Json &data)
+			void BinanceRestApi::on_query_order(const Json &data, const Request& request)
 			{
 				for (Json d : data)
 				{
@@ -535,7 +471,7 @@ namespace Keen
 				this->exchange->write_log("Entrustment information query successful");
 			}
 
-			void BinanceRestApi::on_query_contract(const Json &data)
+			void BinanceRestApi::on_query_contract(const Json &data, const Request& request)
 			{
 				for (Json d : data["symbols"])
 				{
@@ -573,18 +509,18 @@ namespace Keen
 				this->exchange->write_log("Contract information query successful");
 			}
 
-			void BinanceRestApi::on_send_order(const Json &data)
+			void BinanceRestApi::on_send_order(const Json &data, const Request& request)
 			{
 			}
 
-			void BinanceRestApi::on_send_order_failed(const Error& error, const Request& request)
+			void BinanceRestApi::on_send_order_failed(int status_code, const Request& request)
 			{
 				OrderData order = std::any_cast<OrderData>(request.extra);
 				order.status = Status::REJECTED;
 				this->exchange->on_order(order);
 
 				AString msg = Printf("Commission failed, status code: %d, message: %s",
-					error.status(), error.errorData().c_str());
+					status_code, request.response->body.c_str());
 				this->exchange->write_log(msg);
 			}
 
@@ -600,11 +536,11 @@ namespace Keen
 				// 				}
 			}
 
-			void BinanceRestApi::on_cancel_order(const Json &data)
+			void BinanceRestApi::on_cancel_order(const Json &data, const Request& request)
 			{
 			}
 
-			void BinanceRestApi::on_start_user_stream(const Json &data)
+			void BinanceRestApi::on_start_user_stream(const Json &data, const Request& request)
 			{
 				this->user_stream_key = data["listenKey"];
 				this->keep_alive_count = 0;
@@ -613,7 +549,7 @@ namespace Keen
 				this->trade_ws_api->connect(url, this->proxy_host, this->proxy_port);
 			}
 
-			void BinanceRestApi::on_keep_user_stream(const Json &data)
+			void BinanceRestApi::on_keep_user_stream(const Json &data, const Request& request)
 			{
 			}
 

@@ -83,9 +83,9 @@ namespace Keen
 				void query_time();
 				void query_contract();
 
-				void on_query_order(const Json& packet);
-				void on_query_time(const Json& packet);
-				void on_instrument(const Json& packet);
+				void on_query_order(const Json& packet, const Request& request);
+				void on_query_time(const Json& packet, const Request& request);
+				void on_instrument(const Json& packet, const Request& request);
 
 				void on_error(const std::exception& ex, const Request& request) override;
 
