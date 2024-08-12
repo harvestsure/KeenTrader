@@ -291,36 +291,24 @@ namespace Keen
 
 			void OkxRestApi::query_order()
 			{
-				Request request{ .method = "GET", .path = "/api/v5/trade/orders-pending" };
+				Request request{ 
+					.method = "GET", 
+					.path = "/api/v5/trade/orders-pending",
+					.callback = std::bind(&OkxRestApi::on_query_order, this, _1, _2)
+				};
 
-				this->async_request<ResJson>(request)
-					.done([&](const ResJson& response) {
-						on_query_order(response.serialize());
-					})
-					.fail([&](const Error& error) {
-						Printf("fail");
-					})
-					.error([&](const std::exception& e) {
-						Printf("error");
-					})
-					.send();
+				this->request(request);
 			}
 
 			void OkxRestApi::query_time()
 			{
-				Request request{ .method = "GET", .path = "/api/v5/public/time" };
+				Request request{ 
+					.method = "GET", 
+					.path = "/api/v5/public/time",
+					.callback = std::bind(&OkxRestApi::on_query_time, this, _1, _2)
+				};
 
-				this->async_request<ResJson>(request)
-					.done([&](const ResJson& response) {
-						on_query_time(response.serialize());
-					})
-					.fail([&](const Error& error) {
-						Printf("fail");
-					})
-					.error([&](const std::exception& e) {
-						Printf("error");
-					})
-					.send();
+				this->request(request);
 			}
 
 			void OkxRestApi::query_contract()
@@ -332,24 +320,15 @@ namespace Keen
 				{
 					Request request{ 
 						.method = "GET", 
-						.path = "/api/v5/public/instruments?instType=" + inst_type 
+						.path = "/api/v5/public/instruments?instType=" + inst_type ,
+						.callback = std::bind(&OkxRestApi::on_instrument, this, _1, _2)
 					};
 
-					this->async_request<ResJson>(request)
-						.done([&](const ResJson& response) {
-							on_instrument(response.serialize());
-						})
-						.fail([&](const Error& error) {
-								Printf("fail");
-						})
-						.error([&](const std::exception& e) {
-							Printf("error");
-						})
-						.send();
+					this->request(request);
 				}
 			}
 
-			void OkxRestApi::on_query_order(const Json& packet)
+			void OkxRestApi::on_query_order(const Json& packet, const Request& request)
 			{
 				for (const Json& order_info : packet["data"])
 				{
@@ -361,7 +340,7 @@ namespace Keen
 				this->exchange->write_log("Entrustment information query successful");
 			}
 
-			void OkxRestApi::on_query_time(const Json& packet)
+			void OkxRestApi::on_query_time(const Json& packet, const Request& request)
 			{
 				AString server_time = DateTimeToString(DateTimeFromStringTime(packet["data"][0]["ts"]));
 				AString local_time = DateTimeToString(currentDateTime());
@@ -369,7 +348,7 @@ namespace Keen
 				this->exchange->write_log(msg);
 			}
 
-			void OkxRestApi::on_instrument(const Json& packet)
+			void OkxRestApi::on_instrument(const Json& packet, const Request& request)
 			{
 				AString instType;
 				for (const Json& d : packet["data"])

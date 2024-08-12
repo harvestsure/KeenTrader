@@ -11,6 +11,11 @@ namespace Keen
 		using Params = std::map<std::string, std::string>;
 		using RequestData = std::variant<Json, AString>;
 
+		using CALLBACK_TYPE = std::function<void(const Json&, const Request&)>;
+		using ON_FAILED_TYPE = std::function<void(int, const Request&)>;
+		using ON_ERROR_TYPE = std::function<void(const std::exception&, const Request&)>;
+		using CONNECTED_TYPE = std::function<void(const Request&)>;
+
 		inline AString BuildHeaders(const Headers& headers)
 		{
 			AString str;
@@ -83,7 +88,7 @@ namespace Keen
 			std::string reason;
 			Headers headers;
 			std::string body;
-			std::string location; // Redirect location
+			std::string location;
 		};
 
 		class Request
@@ -102,7 +107,7 @@ namespace Keen
 					<< "headers: " << BuildHeaders(this->headers) << "\n"
 					<< "params: " << BuildParams(this->params) << "\n"
 					<< "data: " << RequestDataToString(this->data) << "\n"
-					<< "response: " << (this->response ? this->response->body : "") << "\n";
+					<< "response: " << (this->response.has_value() ? this->response->body : "") << "\n";
 				return ss.str();
 			}
 
@@ -111,11 +116,14 @@ namespace Keen
 			AString path;
 			Params params;
 			Headers headers;
-			RequestData data;
-
+			RequestData data = AString();
 			std::any extra;
 
-			Response* response = nullptr;
+			CALLBACK_TYPE callback;
+			ON_FAILED_TYPE on_failed;
+			ON_ERROR_TYPE on_error;
+
+			std::optional<Response> response;
 		};
 
 		class Process
@@ -164,10 +172,10 @@ namespace Keen
 			AString _data;
 		};
 
-		class ResString : public ResponseData 
+		class ResString : public ResponseData
 		{
 		public:
-			ResString(const AString& data) 
+			ResString(const AString& data)
 				: ResponseData(data) { }
 
 			virtual void read() override {
