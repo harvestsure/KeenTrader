@@ -57,14 +57,14 @@ namespace Keen
 			};
 
 			static std::map<Direction, AString> DIRECTION_KT2OKX = {
-					{ Direction::LONG, "buy" },
-					{ Direction::SHORT, "sell" }
+				{ Direction::LONG, "buy" },
+				{ Direction::SHORT, "sell" }
 			};
 
 			static std::map<Direction, AString> POSSIZE_KT2OKX = {
-					{ Direction::LONG, "long" },
-					{ Direction::SHORT, "short" },
-					{ Direction::NET, "net" }
+				{ Direction::LONG, "long" },
+				{ Direction::SHORT, "short" },
+				{ Direction::NET, "net" }
 			};
 
 			static std::map<Interval, AString> INTERVAL_KT2OKX = {

@@ -1,8 +1,6 @@
 #include "Globals.h"
 #include "RestClient.h"
-
-#define CPPHTTPLIB_OPENSSL_SUPPORT
-#include "httplib.h"
+#include "HttpClient/Sender.h"
 
 namespace Keen
 {
