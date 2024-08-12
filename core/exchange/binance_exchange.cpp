@@ -26,11 +26,15 @@ namespace Keen
 				{"PARTIALLY_FILLED", Status::PARTTRADED},
 				{"FILLED", Status::ALLTRADED},
 				{"CANCELED", Status::CANCELLED},
-				{"REJECTED", Status::REJECTED}};
+				{"REJECTED", Status::REJECTED},
+				{"EXPIRED", Status::CANCELLED},
+			};
 
 			std::map<OrderType, AString> ORDERTYPE_KT2BINANCE = {
 				{OrderType::LIMIT, "LIMIT"},
-				{OrderType::MARKET, "MARKET"}};
+				{OrderType::MARKET, "MARKET"},
+				{OrderType::STOP, "STOP_LOSS"}
+			};
 
 			std::map<AString, OrderType> ORDERTYPE_BINANCE2KT;
 
@@ -47,8 +51,9 @@ namespace Keen
 
 			std::map<Interval, std::chrono::minutes> TIMEDELTA_MAP = {
 				{Interval::MINUTE, std::chrono::minutes{1}},
-				{Interval::HOUR, std::chrono::minutes{1 * 60}},
-				{Interval::DAILY, std::chrono::minutes{24 * 60}}};
+				{Interval::HOUR, std::chrono::hours{1}},
+				{Interval::DAILY, std::chrono::days{1}}
+			};
 
 			std::map<AString, AString> symbol_name_map = {};
 
