@@ -80,3 +80,13 @@ else()
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
+
+
+if(UNIX)
+    find_library(UUID_LIB uuid)
+    if(UUID_LIB)
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${UUID_LIB})
+    else()
+        message(FATAL_ERROR "libuuid not found")
+    endif()
+endif()
