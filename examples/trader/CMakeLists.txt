@@ -27,3 +27,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     cta_strategy
     r_break_strategy
 )
+
+if(UNIX OR APPLE)
+    find_package(Threads REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
+    find_library(UUID_LIB uuid)
+endif()
