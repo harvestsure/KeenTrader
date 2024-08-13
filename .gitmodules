@@ -19,3 +19,7 @@
 [submodule "libraries/magic_enum"]
 	path = libraries/magic_enum
 	url = https://github.com/Neargye/magic_enum.git
+[submodule "libraries/websocketpp"]
+	path = libraries/websocketpp
+	url = https://github.com/zaphoyd/websocketpp.git
+	branch = develop
