@@ -32,27 +32,25 @@ namespace Keen
 				friend BinanceTradeWebsocketApi;
 				friend BinanceDataWebsocketApi;
 				friend BinanceRestApi;
-				/*
-				* Binance connection.
-				*/
-
 			public:
 				BinanceExchange(EventEmitter* event_emitter);
 				~BinanceExchange();
 
-				void connect(const Json& setting);
+				void connect(const Json& setting) override;
 
-				void subscribe(const SubscribeRequest& req);
+				void subscribe(const SubscribeRequest& req) override;
 
-				AString send_order(const OrderRequest& req);
+				AString send_order(const OrderRequest& req) override;
 
-				void query_account();
+				void cancel_order(const CancelRequest& req) override;
 
-				void query_position();
+				void query_account() override;
 
-				std::list<BarData> query_history(HistoryRequest req);
+				void query_position() override;
 
-				void close();
+				std::list<BarData> query_history(const HistoryRequest& req) override;
+
+				void close() override;
 
 				void process_timer_event(const Event& event);
 
@@ -75,7 +73,7 @@ namespace Keen
 				void connect(
 					AString key,
 					AString secret,
-					int session_number,
+					AString server,
 					AString proxy_host,
 					uint16_t proxy_port
 				);
@@ -125,7 +123,7 @@ namespace Keen
 				AString exchange_name;
 				BinanceTradeWebsocketApi* trade_ws_api;
 
-				AString key, secret;
+				AString key, secret, server;
 
 				AString proxy_host;
 				uint16_t proxy_port;
@@ -148,7 +146,7 @@ namespace Keen
 
 				void on_connected();
 
-				void on_packet(Json packet);
+				void on_packet(const Json& packet) override;
 
 				void on_account(const Json& packet);
 
@@ -161,7 +159,6 @@ namespace Keen
 
 			class BinanceDataWebsocketApi :public WebsocketClient
 			{
-				////
 			public:
 				BinanceDataWebsocketApi(BinanceExchange* exchange);
 
@@ -169,7 +166,7 @@ namespace Keen
 
 				void on_connected();
 
-				void subscribe(SubscribeRequest req);
+				void subscribe(const SubscribeRequest& req);
 
 				void on_packet(Json packet);
 
