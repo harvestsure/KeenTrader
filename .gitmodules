@@ -1,7 +1,3 @@
-[submodule "libraries/websocketpp"]
-	path = libraries/websocketpp
-	url = https://github.com/zaphoyd/websocketpp.git
-	branch = develop
 [submodule "libraries/asio"]
 	path = libraries/asio
 	url = https://github.com/chriskohlhoff/asio.git
