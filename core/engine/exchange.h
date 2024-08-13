@@ -44,7 +44,9 @@ namespace Keen
 
 			virtual AString send_order(const OrderRequest& req);
 
-			virtual AString  send_quote(const QuoteRequest& req);
+			virtual void cancel_order(const CancelRequest& req);
+
+			virtual AString send_quote(const QuoteRequest& req);
 
 			virtual void cancel_quote(const CancelRequest& req);
 
@@ -54,9 +56,7 @@ namespace Keen
 
 			virtual std::list<BarData> query_history(const HistoryRequest& req);
 
-			virtual Json get_default_setting();
-
-			FnMut<void(const CancelRequest&)> cancel_order;
+			virtual const Json& get_default_setting() const;
 
 		protected:
 			Json default_setting;
@@ -65,59 +65,6 @@ namespace Keen
 
 			EventEmitter* event_emitter;
 			AString exchange_name;
-		};
-
-
-		class KEEN_ENGINE_EXPORT LocalOrderManager
-		{
-		public:
-			LocalOrderManager(BaseExchange* exchange, AString order_prefix = "");
-
-			AString new_local_orderid();
-
-			AString get_local_orderid(AString sys_orderid);
-
-			AString get_sys_orderid(AString local_orderid);
-
-			void update_orderid_map(AString local_orderid, AString sys_orderid);
-
-			void check_push_data(AString sys_orderid);
-
-			void add_push_data(AString sys_orderid, Json data);
-
-			std::optional<OrderData> get_order_with_sys_orderid(AString sys_orderid);
-
-			OrderData get_order_with_local_orderid(AString local_orderid);
-
-			void on_order(OrderData order);
-
-			void cancel_order(CancelRequest req);
-
-			void check_cancel_request(AString local_orderid);
-
-		protected:
-
-			BaseExchange* exchange;
-
-			AString order_prefix;
-			int order_count;
-			std::map<AString, OrderData> orders;	// local_orderid:order
-
-			// Map between local and system orderid
-			std::map<AString, AString> local_sys_orderid_map;
-			std::map<AString, AString> sys_local_orderid_map;
-
-			// Push order data buf
-			std::map<AString, Json> push_data_buf;  // sys_orderid:data
-
-			// Callback for processing push order data
-			FnMut<void(Json)> push_data_callback = nullptr;
-
-			// Cancel request buf
-			std::map<AString, CancelRequest> cancel_request_buf;// local_orderid:req
-
-			// Callback for processing push order data
-			FnMut<void(const CancelRequest&)> _cancel_order = nullptr;
 		};
 	}
 }

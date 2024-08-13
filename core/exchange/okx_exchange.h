@@ -33,25 +33,25 @@ namespace Keen
 				OkxExchange(EventEmitter* event_emitter);
 				virtual ~OkxExchange();
 
-				void connect(const Json& setting);
+				void connect(const Json& setting) override;
 
-				void subscribe(const SubscribeRequest& req);
+				void subscribe(const SubscribeRequest& req) override;
 
-				AString send_order(const OrderRequest& req);
+				AString send_order(const OrderRequest& req) override;
 
-				void cancel_order(const CancelRequest& req);
+				void cancel_order(const CancelRequest& req) override;
 
-				void query_account();
+				void query_account() override;
 
-				void query_position();
+				void query_position() override;
 
-				std::list<BarData> query_history(const HistoryRequest& req);
+				std::list<BarData> query_history(const HistoryRequest& req) override;
 
-				void close();
+				void close() override;
 
-				void on_order(const OrderData& order);
+				void on_order(const OrderData& order) override;
 
-				std::optional<OrderData> get_order(AString orderid);
+				std::optional<OrderData> get_order(AString orderid) ;
 
 			protected:
 				Json voidault_setting;
