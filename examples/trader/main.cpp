@@ -87,9 +87,9 @@ int main()
 		{"api_key", ""},
 		{"secret_key", ""},
 		{"passphrase", ""},
-		{"proxy_host", ""},
-		{"proxy_port", 0},
-		{"server", "test"}
+		{"proxy_host", "127.0.0.1"},
+		{"proxy_port", 1080},
+		{"server", "TEST"}
 	};
 #else
 	Json SETTINGS =
@@ -106,15 +106,14 @@ int main()
 	trade_engine->connect(SETTINGS, "OKX");
 	trade_engine->write_log("Connecting to OKX interface");
 
-	std::this_thread::sleep_for(std::chrono::seconds(3));
-
-	SubscribeRequest req;
-	req.exchange = Exchange::OKX;
-	req.symbol = "ETH-USDT-SWAP";
-	okex->subscribe(req);
-
 	std::thread t([=] {
-		std::this_thread::sleep_for(std::chrono::seconds(1));
+		std::this_thread::sleep_for(std::chrono::seconds(5));
+
+		SubscribeRequest req { 
+			.symbol = "ETH-USDT-SWAP",
+			.exchange = Exchange::OKX };
+		req.__post_init__();
+		okex->subscribe(req);
 
 		OrderRequest order_req{
 			.symbol = "ETH-USDT-SWAP",
@@ -125,6 +124,7 @@ int main()
 			.price = 120,
 			.offset = Offset::OPEN,
 			.exchange_name = "OKX" };
+		order_req.__post_init__();
 
 		AString orderid = okex->send_order(order_req);
 
@@ -134,9 +134,10 @@ int main()
 			.orderid = orderid,
 			.symbol = "ETH-USDT-SWAP",
 			.exchange = Exchange::OKX };
+		cancel_req.__post_init__();
 
 		okex->cancel_order(cancel_req);
-		});
+	});
 
 	cta_engine->init_engine();
 	trade_engine->write_log("CTA strategy initialization completed");
