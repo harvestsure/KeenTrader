@@ -47,7 +47,7 @@ jobs:
 
     - name: Configure libraries
       run: |
-        sudo apt install libssl-dev libuuid-dev
+        sudo apt install libssl-dev uuid-dev
 
     - name: Build Release
       run: |
