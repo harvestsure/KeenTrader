@@ -29,6 +29,15 @@ jobs:
     runs-on: ${{ matrix.compiler.os }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
+        recursive: true
+
+    - name: Set reusable strings
+      id: strings
+      shell: bash
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
     - name: Configure clang
       run: |
@@ -45,7 +54,7 @@ jobs:
           sudo apt install ${{ matrix.compiler.cxx }} -y
         fi
 
-    - name: Configure libraries
+    - name: Install dependencies 
       run: |
         sudo apt install libssl-dev uuid-dev
 
