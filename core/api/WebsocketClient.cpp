@@ -193,18 +193,21 @@ namespace Keen
 				m_ping_timer = std::make_shared<asio::steady_timer>(*m_io_service, m_ping_interval);
 				m_ping_timer->async_wait([this](const asio::error_code& ec)
 					{
-						if (!ec) {
+						if (!ec)
+						{
 							if (m_hdl.lock())
 							{
 								websocketpp::lib::error_code ec;
 								m_client.ping(m_hdl, "ping", ec);
-								if (ec) {
+								if (ec)
+								{
 									LOGERROR("Ping failed with exception: %d -- %s", ec.value(), ec.message().c_str());
 								}
 							}
 
 							start_ping();
-						} }
+						}
+					}
 				);
 			}
 
