@@ -28,8 +28,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     r_break_strategy
 )
 
-if(UNIX OR APPLE)
+if(UNIX AND NOT APPLE)
     find_package(Threads REQUIRED)
     target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
-    find_library(UUID_LIB uuid)
 endif()
