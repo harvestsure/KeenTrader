@@ -1,5 +1,8 @@
 #include <api/Globals.h>
 #include "event.h"
+#define ASIO_STANDALONE 1
+
+#include <asio.hpp>
 
 namespace Keen
 {
@@ -19,9 +22,10 @@ namespace Keen
 		class EventEmitterImpl : public EventEmitter
 		{
 		public:
-			EventEmitterImpl()
+			EventEmitterImpl(asio::io_service* io_service)
 				: _interval(1)
 				, _active(false)
+				, _timer(*io_service)
 			{
 
 			}
@@ -32,14 +36,14 @@ namespace Keen
 				this->_interval = interval;
 
 				this->_thread = std::thread(&EventEmitterImpl::_run, this);
-				this->_timer = std::thread(&EventEmitterImpl::_run_timer, this);
+
+				_run_timer();
 			}
 
 			void stop()
 			{
 				this->_active = false;
 				m_QueueNonempty.Set();
-				this->_timer.join();
 				this->_thread.join();
 			}
 
@@ -128,6 +132,7 @@ namespace Keen
 						cCSUnlock Unlock(Lock);
 						m_QueueNonempty.Wait();
 					}
+
 					if (!this->_active)
 					{
 						return;
@@ -135,10 +140,14 @@ namespace Keen
 
 					ASSERT(!this->_queue.empty());
 
-					Event& event = this->_queue.front();
-					this->_process(event);
+					Event event = this->_queue.front();
+
 					this->_queue.pop_front();
 					Lock.Unlock();
+
+					api::InvokeToQueue([this, event]() {
+						this->_process(event);
+					});
 				}
 			}
 
@@ -163,12 +172,20 @@ namespace Keen
 
 			void _run_timer()
 			{
-				while (this->_active)
-				{
-					std::this_thread::sleep_for(std::chrono::seconds(this->_interval));
-					Event event = Event(EVENT_TIMER);
-					this->put(event);
-				}
+				if (!this->_active)
+					return;
+
+				_timer.expires_after(std::chrono::seconds(this->_interval));
+				_timer.async_wait([this](const asio::error_code& ec)
+					{
+						if (!ec)
+						{
+							Event event(EVENT_TIMER);
+							this->put(event);
+
+							_run_timer();
+						}
+					});
 			}
 
 		private:
@@ -180,7 +197,7 @@ namespace Keen
 
 			bool _active = false;
 			std::thread _thread;
-			std::thread _timer;
+			asio::steady_timer _timer;
 			std::unordered_multimap<AString, HandlerType> _handlers;
 			std::list<HandlerType> _general_handlers;
 
@@ -191,7 +208,8 @@ namespace Keen
 			static std::unique_ptr<EventEmitterImpl> instance;
 			if (!instance)
 			{
-				instance = std::make_unique<EventEmitterImpl>();
+				auto event_loop = api::get_main_event_loop();
+				instance = std::make_unique<EventEmitterImpl>((asio::io_service*)event_loop);
 			}
 			return instance.get();
 		}

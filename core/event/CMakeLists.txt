@@ -17,6 +17,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE KEEN_BUILD_EVENT_LIB)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${src_loc}/core
+    ${libs_loc}/asio/asio/include
     ${libs_loc}/nlohmann_json/include
 )
 

@@ -54,8 +54,6 @@ namespace Keen
 				std::optional<OrderData> get_order(AString orderid) ;
 
 			protected:
-				Json voidault_setting;
-
 				std::map<AString, OrderData> orders;
 
 				OkxRestApi* rest_api = nullptr;

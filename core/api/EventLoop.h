@@ -42,6 +42,6 @@ namespace Keen
                 std::forward<FunctorT>(functor)));
         }
 
-        void InvokeOnMainLoop(MessageData *pdata);
+        KEEN_API_EXPORT void InvokeOnMainLoop(MessageData *pdata);
     }
 }
