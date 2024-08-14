@@ -17,7 +17,11 @@ namespace Keen
 		{
 			const AString REST_HOST = "https://www.binance.com";
 			const AString WEBSOCKET_TRADE_HOST = "wss://stream.binance.com:9443/ws/";
-			const AString WEBSOCKET_DATA_HOST = "wss://stream.binance.com:9443/stream?streams=";
+			const AString WEBSOCKET_DATA_HOST = "wss://stream.binance.com:9443/stream";
+
+			const AString TESTNET_REST_HOST = "https://testnet.binance.vision";
+			const AString TESTNET_WEBSOCKET_TRADE_HOST = "wss://testnet.binance.vision/ws/";
+			const AString TESTNET_WEBSOCKET_DATA_HOST = "wss://testnet.binance.vision/stream";
 
 			AString generate_signature(AString msg, AString secret_key);
 
@@ -55,7 +59,7 @@ namespace Keen
 				{Interval::DAILY, std::chrono::days{1}}
 			};
 
-			std::map<AString, AString> symbol_name_map = {};
+			std::map<AString, ContractData> symbol_name_map = {};
 
 			enum Security
 			{
@@ -83,10 +87,11 @@ namespace Keen
 				InitGlobals();
 
 				default_setting = {
-					{"key", ""},
-					{"secret", ""},
-					{"session_number", 3},
-					{"proxy_host", ""},
+					{"api_key", ""},
+					{"api_secret", ""},
+					{"server", "REAL"}, //["REAL", "TESTNET"]
+					{"kline_stream", true}, //["False", "True"],
+					{"proxy_host", "" },
 					{"proxy_port", 0},
 				};
 
@@ -95,11 +100,6 @@ namespace Keen
 				this->trade_ws_api = new BinanceTradeWebsocketApi(this);
 				this->market_ws_api = new BinanceDataWebsocketApi(this);
 				this->rest_api = new BinanceRestApi(this);
-
-				this->cancel_order = [this](CancelRequest req)
-				{
-					this->rest_api->cancel_order(req);
-				};
 			}
 
 			BinanceExchange::~BinanceExchange()
@@ -111,13 +111,14 @@ namespace Keen
 
 			void BinanceExchange::connect(const Json &setting)
 			{
-				AString key = setting["key"];
-				AString secret = setting["secret"];
-				int session_number = setting["session_number"];
+				AString key = setting["api_key"];
+				AString secret = setting["api_secret"];
+				AString server = setting["server"];
+				bool kline_stream = setting["kline_stream"];
 				AString proxy_host = setting["proxy_host"];
 				int proxy_port = setting["proxy_port"];
 
-				this->rest_api->connect(key, secret, session_number, proxy_host, proxy_port);
+				this->rest_api->connect(key, secret, server, proxy_host, proxy_port);
 				this->market_ws_api->connect(proxy_host, proxy_port);
 				this->event_emitter->Register(engine::EVENT_TIMER, std::bind(&BinanceExchange::process_timer_event, this, _1));
 			}
@@ -132,6 +133,11 @@ namespace Keen
 				return this->rest_api->send_order(req);
 			}
 
+			void BinanceExchange::cancel_order(const CancelRequest& req)
+			{
+				this->rest_api->cancel_order(req);
+			}
+
 			void BinanceExchange::query_account()
 			{
 			}
@@ -140,7 +146,7 @@ namespace Keen
 			{
 			}
 
-			std::list<BarData> BinanceExchange::query_history(HistoryRequest req)
+			std::list<BarData> BinanceExchange::query_history(const HistoryRequest& req)
 			{
 				return this->rest_api->query_history(req);
 			}
@@ -239,7 +245,7 @@ namespace Keen
 			void BinanceRestApi::connect(
 				AString key,
 				AString secret,
-				int session_number,
+				AString server,
 				AString proxy_host,
 				uint16_t proxy_port)
 			{
@@ -250,13 +256,17 @@ namespace Keen
 				this->secret = secret;
 				this->proxy_port = proxy_port;
 				this->proxy_host = proxy_host;
+				this->server = server;
 
 				this->connect_time = time_point_cast<seconds>(currentDateTime()).time_since_epoch().count() * this->order_count;
 
-				this->init(REST_HOST, proxy_host, proxy_port);
-				this->start(session_number);
+				if(this->server == "REAL")
+					this->init(REST_HOST, proxy_host, proxy_port);
+				else
+					this->init(TESTNET_REST_HOST, proxy_host, proxy_port);
+				this->start();
 
-				this->exchange->write_log("REST API started successfully");
+				this->exchange->write_log("REST API started");
 
 				this->query_time();
 				this->query_account();
@@ -508,7 +518,7 @@ namespace Keen
 					);
 					this->exchange->on_contract(contract);
 
-					symbol_name_map[contract.symbol] = contract.name;
+					symbol_name_map[contract.symbol] = contract;
 				}
 
 				this->exchange->write_log("Contract information query successful");
@@ -669,7 +679,7 @@ namespace Keen
 				this->exchange->write_log("Transaction Websocket API connection successful");
 			}
 
-			void BinanceTradeWebsocketApi::on_packet(Json packet)
+			void BinanceTradeWebsocketApi::on_packet(const Json& packet)
 			{
 				if (packet["e"] == "outboundAccountInfo")
 					this->on_account(packet);
@@ -763,7 +773,7 @@ namespace Keen
 				this->exchange->write_log("Market Websocket API connection refresh");
 			}
 
-			void BinanceDataWebsocketApi::subscribe(SubscribeRequest req)
+			void BinanceDataWebsocketApi::subscribe(const SubscribeRequest& req)
 			{
 				if (!symbol_name_map.count(req.symbol))
 				{
