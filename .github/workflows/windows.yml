@@ -23,7 +23,7 @@ jobs:
       
     - name: Install OpenSSL[x86] on Windows
       run: |
-        choco install openssl --version 3.0.0 --x86
+        choco install openssl --version 3.3.1 --x86
 
     - name: Set up OpenSSL environment variables
       shell: bash
@@ -47,7 +47,7 @@ jobs:
 
     - name: Install OpenSSL[x64] on Windows
       run: |
-        choco install openssl --version 3.0.0 --x64
+        choco install openssl --version 3.3.1 --x64
 
     - name: Set up OpenSSL environment variables
       shell: bash
