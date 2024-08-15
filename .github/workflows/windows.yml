@@ -21,30 +21,6 @@ jobs:
         submodules: true
         recursive: true
       
-    - name: Install OpenSSL[x86] on Windows
-      run: |
-        choco install openssl --version 3.3.1 --x86
-
-    - name: Set up OpenSSL environment variables
-      shell: bash
-      run: |
-        OPENSSL_DIR=$(cygpath -m "C:/Program Files/OpenSSL-Win32")
-        echo "OPENSSL_ROOT_DIR=${OPENSSL_DIR}" >> $GITHUB_ENV
-        echo "OPENSSL_INCLUDE_DIR=${OPENSSL_DIR}/include" >> $GITHUB_ENV
-        echo "OPENSSL_LIBRARIES=${OPENSSL_DIR}/lib" >> $GITHUB_ENV
-
-    - name: Build Win32
-      shell: bash
-      run: |
-        rm -rf build
-        mkdir build
-        cd build
-        cmake .. -A Win32 -DOPENSSL_ROOT_DIR=$OPENSSL_ROOT_DIR -DOPENSSL_INCLUDE_DIR=$OPENSSL_INCLUDE_DIR -DOPENSSL_LIBRARIES=$OPENSSL_LIBRARIES
-        cmake --build . -j 4 --config Release
-        ctest --output-on-failure -C Release
-        cmake --build . -j 4 --config Debug
-        ctest --output-on-failure -C Debug
-
     - name: Install OpenSSL[x64] on Windows
       run: |
         choco install openssl --version 3.3.1 --x64
