@@ -20,18 +20,15 @@ jobs:
       with:
         submodules: true
         recursive: true
-      
-    - name: Install OpenSSL[x64] on Windows
-      run: |
-        choco install openssl --version 3.3.1 --x64
 
-    - name: Set up OpenSSL environment variables
-      shell: bash
+    - name: Set up vcpkg
       run: |
-        OPENSSL_DIR=$(cygpath -m "C:/Program Files/OpenSSL-Win64")
-        echo "OPENSSL_ROOT_DIR=${OPENSSL_DIR}" >> $GITHUB_ENV
-        echo "OPENSSL_INCLUDE_DIR=${OPENSSL_DIR}/include" >> $GITHUB_ENV
-        echo "OPENSSL_LIBRARIES=${OPENSSL_DIR}/lib" >> $GITHUB_ENV
+        git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+        C:\vcpkg\bootstrap-vcpkg.bat
+      
+    - name: Install OpenSSL 3 using vcpkg
+      run: |
+        C:\vcpkg\vcpkg.exe install openssl:x64-windows
 
     - name: Build x64
       shell: bash
@@ -39,7 +36,7 @@ jobs:
         rm -rf build
         mkdir build
         cd build
-        cmake .. -A x64 -DOPENSSL_ROOT_DIR=$OPENSSL_ROOT_DIR -DOPENSSL_INCLUDE_DIR=$OPENSSL_INCLUDE_DIR -DOPENSSL_LIBRARIES=$OPENSSL_LIBRARIES
+        cmake -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake .. -A x64
         cmake --build . -j 4 --config Release
         ctest --output-on-failure -C Release
         cmake --build . -j 4 --config Debug
