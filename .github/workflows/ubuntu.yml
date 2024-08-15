@@ -26,8 +26,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: true
-        recursive: true
+        submodules: recursive
 
     - name: Set reusable strings
       id: strings

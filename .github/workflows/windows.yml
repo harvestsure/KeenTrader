@@ -18,8 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: true
-        recursive: true
+        submodules: recursive
       
     - name: Setup vcpkg
       uses: lukka/run-vcpkg@v11
@@ -27,7 +26,7 @@ jobs:
       with:
         # This one is not needed, as it is the default value anyway.
         # vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgJsonGlob: '**/cmakepresets/vcpkg.json'
+        vcpkgJsonGlob: '**/vcpkg.json'
 
     - name: Build x64
       shell: bash
