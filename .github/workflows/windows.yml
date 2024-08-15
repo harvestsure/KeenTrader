@@ -16,10 +16,6 @@ jobs:
     
     env:
       VCPKGGITCOMMITID: 4065f37d0a6628ef17cf6ee15385f9091f1075bc
-      
-    defaults:
-      run:
-        shell: cmd
 
     name: "${{ matrix.config.vs }}"
     steps:
@@ -42,7 +38,7 @@ jobs:
         rm -rf build
         mkdir build
         cd build
-        cmake -DCMAKE_TOOLCHAIN_FILE=${{env.VCPKG_ROOT}}/scripts/buildsystems/vcpkg.cmake .. -A x64
+        cmake -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}\vcpkg\scripts\buildsystems\vcpkg.cmake" .. -A x64
         cmake --build . -j 4 --config Release
         ctest --output-on-failure -C Release
         cmake --build . -j 4 --config Debug
