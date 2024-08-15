@@ -6,5 +6,6 @@
       "name": "openssl",
       "version>=": "3.3.1"
     }
-  ]
+  ],
+  "builtin-baseline": "4065f37d0a6628ef17cf6ee15385f9091f1075bc"
 }
