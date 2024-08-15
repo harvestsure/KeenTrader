@@ -1,7 +1,10 @@
 {
-  "name": "KeenTrader",
-  "version-string": "0.0.1",
+  "name": "keentrader",
+  "version": "1.0.0",
   "dependencies": [
-    "openssl"
+    {
+      "name": "openssl",
+      "version>=": "3.3.1"
+    }
   ]
 }
