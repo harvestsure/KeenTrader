@@ -12,3 +12,9 @@ Open *terminal*, run
     mkdir build
     cd build
     cmake ..
+
+## Status
+
+[![windows](https://github.com/harvestsure/KeenTrader/actions/workflows/windows.yml/badge.svg)](https://github.com/harvestsure/KeenTrader/actions/workflows/windows.yml)
+[![ubuntu](https://github.com/harvestsure/KeenTrader/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/harvestsure/KeenTrader/actions/workflows/ubuntu.yml)
+[![macos](https://github.com/harvestsure/KeenTrader/actions/workflows/macos.yml/badge.svg)](https://github.com/harvestsure/KeenTrader/actions/workflows/macos.yml)
