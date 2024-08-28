@@ -1,9 +1,8 @@
 #include <api/Globals.h>
 #include "utility.h"
-#include <filesystem>
+
 #include<date/date.h>
 
-namespace fs = std::filesystem;
 
 namespace Keen
 {
@@ -18,9 +17,34 @@ namespace Keen
 			return std::make_tuple(symbol, str_to_exchange(exchange_str));
 		}
 
-		AString _get_trader_dir(AString temp_name)
+		fs::path pathHome() {
+			const char* homeDir = nullptr;
+
+#ifdef _WIN32
+			homeDir = std::getenv("USERPROFILE");
+#else
+			homeDir = std::getenv("HOME");
+#endif
+
+			if (homeDir) {
+				return std::filesystem::path(homeDir);
+			}
+			else {
+				throw std::runtime_error("Cannot determine the user's home directory.");
+			}
+		}
+
+		fs::path _get_trader_dir(AString temp_name)
 		{
 			auto temp_path = fs::current_path();
+			temp_path.append(temp_name);
+
+			if (fs::exists(temp_path))
+			{
+				return temp_path.string();
+			}
+
+			temp_path = pathHome();
 			temp_path.append(temp_name);
 
 			if (!fs::exists(temp_path))
@@ -33,14 +57,14 @@ namespace Keen
 
 		AString get_file_path(AString filename)
 		{
-			AString TEMP_DIR = _get_trader_dir(".keentrader");
-			return fs::path(TEMP_DIR).append(filename).string();
+			fs::path TEMP_DIR = _get_trader_dir(".keen_trader");
+			return TEMP_DIR.append(filename).string();
 		}
 
 		AString get_folder_path(AString folder_name)
 		{
-			AString TEMP_DIR = _get_trader_dir(".keentrader");
-			auto folder_path = fs::path(TEMP_DIR).append(folder_name);
+			fs::path TEMP_DIR = _get_trader_dir(".keen_trader");
+			auto folder_path = TEMP_DIR.append(folder_name);
 			if (!fs::exists(folder_path))
 			{
 				fs::create_directory(folder_path);
@@ -65,6 +89,27 @@ namespace Keen
 		{
 			float result = float(int(ceil(value / target)) * target);
 			return result;
+		}
+
+		int get_digits(double value) {
+			std::stringstream ss;
+			ss << std::fixed << value; // 使用定点表示法将浮点数转换为字符串
+			std::string valueStr = ss.str();
+
+			if (valueStr.find("e-") != std::string::npos) {
+				// 处理科学计数法
+				size_t pos = valueStr.find("e-");
+				return std::stoi(valueStr.substr(pos + 2));
+			}
+			else if (valueStr.find('.') != std::string::npos) {
+				// 处理普通小数
+				size_t pos = valueStr.find('.');
+				return valueStr.length() - pos - 1;
+			}
+			else {
+				// 无小数点
+				return 0;
+			}
 		}
 
 		float JsonToFloat(const Json& data)
@@ -109,7 +154,7 @@ namespace Keen
 				AString file_str = cFile::ReadWholeFile(filepath.string());
 				if (file_str.empty())
 				{
-					return Json::object();
+					return Json();
 				}
 				Json data = Json::parse(file_str);
 				return data;

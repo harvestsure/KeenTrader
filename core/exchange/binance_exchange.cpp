@@ -111,12 +111,12 @@ namespace Keen
 
 			void BinanceExchange::connect(const Json &setting)
 			{
-				AString key = setting["api_key"];
-				AString secret = setting["api_secret"];
-				AString server = setting["server"];
-				bool kline_stream = setting["kline_stream"];
-				AString proxy_host = setting["proxy_host"];
-				int proxy_port = setting["proxy_port"];
+				AString key = setting.value("api_key","");
+				AString secret = setting.value("api_secret", "");
+				AString server = setting.value("server", "");
+				bool kline_stream = setting.value("kline_stream", true);
+				AString proxy_host = setting.value("proxy_host", "");
+				int proxy_port = setting.value("proxy_port", 0);
 
 				this->rest_api->connect(key, secret, server, proxy_host, proxy_port);
 				this->market_ws_api->connect(proxy_host, proxy_port);

@@ -2,6 +2,8 @@
 
 #include <engine/object.h>
 
+#include <filesystem>
+namespace fs = std::filesystem;
 
 namespace Keen
 {
@@ -80,7 +82,7 @@ namespace Keen
 
 		extern KEEN_ENGINE_EXPORT std::tuple<AString, Exchange> extract_kt_symbol(AString kt_symbol);
 
-		extern KEEN_ENGINE_EXPORT AString _get_trader_dir(AString temp_name);
+		extern KEEN_ENGINE_EXPORT fs::path _get_trader_dir(AString temp_name);
 
 		extern KEEN_ENGINE_EXPORT AString get_file_path(AString filename);
 
@@ -91,6 +93,8 @@ namespace Keen
 		extern KEEN_ENGINE_EXPORT float floor_to(float value, float target);
 
 		extern KEEN_ENGINE_EXPORT float ceil_to(float value, float target);
+
+		extern KEEN_ENGINE_EXPORT int get_digits(double value);
 
 		extern KEEN_ENGINE_EXPORT float JsonToFloat(const Json& data);
 
