@@ -2,7 +2,7 @@
 
 #include <api/Globals.h>
 #include <engine/engine.h>
-#include <engine/engine.h>
+#include <engine/utility.h>
 #include <exchange/okx_exchange.h>
 #include <exchange/binance_exchange.h>
 
@@ -71,8 +71,8 @@ int main()
 	EventEmitter* event_emitter = MakeEventEmitter();
 	TradeEngine* trade_engine = new TradeEngine(event_emitter);
 
-	auto okex = trade_engine->add_exchange<okx::OkxExchange>();
-	trade_engine->add_exchange<binance::BinanceExchange>();
+	auto okx = trade_engine->add_exchange<okx::OkxExchange>();
+	//trade_engine->add_exchange<binance::BinanceExchange>();
 
 	CtaEngine* cta_engine = dynamic_cast<CtaEngine*>(trade_engine->add_app<CtaStrategyApp>());
 	trade_engine->write_log("Main engine was created successfully");
@@ -81,30 +81,16 @@ int main()
 	event_emitter->Register(EVENT_CTA_LOG, std::bind(&LogEngine::process_log_event, log_engine, std::placeholders::_1));
 	trade_engine->write_log("Register log event listeners");
 
-#ifdef _DEBUG
-	Json SETTINGS =
-	{
-		{"api_key", ""},
-		{"secret_key", ""},
-		{"passphrase", ""},
-		{"proxy_host", "127.0.0.1"},
-		{"proxy_port", 1080},
-		{"server", "TEST"}
-	};
-#else
-	Json SETTINGS =
-	{
-		{"api_key", ""},
-		{"secret_key", ""},
-		{"passphrase", ""},
-		{"proxy_host", ""},
-		{"proxy_port", 0},
-		{"server", "REAL"}
-	};
-#endif // DEBUG
+	const AStringList& exchange_names = trade_engine->get_all_exchange_names();
 
-	trade_engine->connect(SETTINGS, "OKX");
-	trade_engine->write_log("Connecting to OKX interface");
+	for (AString name : exchange_names)
+	{
+		AString filename = Printf("exchange_%s.json", StrToLower(name).c_str());
+		Json loaded_setting = load_json(filename);
+
+		trade_engine->connect(loaded_setting, name);
+		trade_engine->write_log(Printf("Connecting to %s interface", name.c_str()));
+	}
 
 	std::thread t([=] {
 		std::this_thread::sleep_for(std::chrono::seconds(5));
@@ -113,7 +99,7 @@ int main()
 			.symbol = "ETH-USDT-SWAP",
 			.exchange = Exchange::OKX };
 		req.__post_init__();
-		okex->subscribe(req);
+		okx->subscribe(req);
 
 		OrderRequest order_req{
 			.symbol = "ETH-USDT-SWAP",
@@ -126,7 +112,7 @@ int main()
 			.exchange_name = "OKX" };
 		order_req.__post_init__();
 
-		AString orderid = okex->send_order(order_req);
+		AString orderid = okx->send_order(order_req);
 
 		std::this_thread::sleep_for(std::chrono::seconds(1));
 
@@ -136,7 +122,7 @@ int main()
 			.exchange = Exchange::OKX };
 		cancel_req.__post_init__();
 
-		okex->cancel_order(cancel_req);
+		okx->cancel_order(cancel_req);
 	});
 
 	cta_engine->init_engine();

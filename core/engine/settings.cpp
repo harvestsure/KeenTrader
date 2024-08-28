@@ -6,9 +6,6 @@ namespace Keen
 	namespace engine
 	{
 		Json SETTINGS = {
-			{ "font.family", "Arial" },
-			{ "font.size", 12 },
-
 			{ "log.active", true },
 			//{ "log.level", CRITICAL },
 			{ "log.console", true },

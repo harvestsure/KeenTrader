@@ -139,11 +139,23 @@ namespace Keen
 			return exchanges;
 		}
 
-		void TradeEngine::connect(Json setting, AString exchange_name)
+		void TradeEngine::connect(const Json& setting, AString exchange_name)
 		{
+			if (setting.is_null())
+				return;
+
 			auto exchange = this->get_exchange(exchange_name);
 			if (exchange)
-				exchange->connect(setting);
+			{
+				try
+				{
+					exchange->connect(setting);
+				}
+				catch (const std::exception& e)
+				{
+					LOGERROR(Printf("connect to exchange:%s catch %s", exchange_name.c_str(), e.what()));
+				}
+			}
 		}
 
 		void TradeEngine::subscribe(const SubscribeRequest& req, AString exchange_name)

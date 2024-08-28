@@ -62,7 +62,7 @@ namespace Keen
 
 			std::list<Exchange> get_all_exchanges();
 
-			void connect(Json setting, AString exchange_name);
+			void connect(const Json& setting, AString exchange_name);
 
 			void subscribe(const SubscribeRequest& req, AString exchange_name);
 
