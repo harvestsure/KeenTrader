@@ -34,7 +34,7 @@ namespace Keen
 
 			virtual Request &sign(Request &request);
 
-			virtual void on_failed(int status_code, const Request &request);
+			virtual void on_failed(const Error& error, const Request &request);
 
 			virtual void on_error(const std::exception &ex, const Request &request);
 
