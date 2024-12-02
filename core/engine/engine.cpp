@@ -68,7 +68,7 @@ namespace Keen
 			this->add_engine(new OmsEngine(this, this->event_emitter));
 			this->add_engine(new EmailEngine(this, this->event_emitter));
 
-			this->send_order = [=](const OrderRequest& req, AString exchange_name)->AString
+			this->send_order = [=, this](const OrderRequest& req, AString exchange_name)->AString
 			{
 				auto exchange = this->get_exchange(exchange_name);
 				if (exchange)
