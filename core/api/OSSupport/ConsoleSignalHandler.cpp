@@ -16,11 +16,11 @@ static void NonCtrlHandler(int a_Signal)
 
 		LOGERROR(
 			"Failure report: \n\n"
-			"  :(   | Cuberite has encountered an error and needs to close\n"
+			"  :(   | keentrader has encountered an error and needs to close\n"
 			"       | SIGSEGV: Segmentation fault\n"
 			"       |\n"
 #ifdef BUILD_ID
-			"       | Cuberite " BUILD_SERIES_NAME " (id: " BUILD_ID ")\n"
+			"       |  " BUILD_SERIES_NAME " (id: " BUILD_ID ")\n"
 			"       | from commit " BUILD_COMMIT_ID "\n"
 #endif
 		);
@@ -37,11 +37,11 @@ static void NonCtrlHandler(int a_Signal)
 
 		LOGERROR(
 			"Failure report: \n\n"
-			"  :(   | Cuberite has encountered an error and needs to close\n"
+			"  :(   | keentrader has encountered an error and needs to close\n"
 			"       | SIGABRT: Server self-terminated due to an internal fault\n"
 			"       |\n"
 #ifdef BUILD_ID
-			"       | Cuberite " BUILD_SERIES_NAME " (id: " BUILD_ID ")\n"
+			"       | keentrader " BUILD_SERIES_NAME " (id: " BUILD_ID ")\n"
 			"       | from commit " BUILD_COMMIT_ID "\n"
 #endif
 		);
