@@ -144,7 +144,7 @@ namespace Keen
 
 				void connect(AString url, AString proxy_host, uint16_t proxy_port);
 
-				void on_connected();
+				void on_connected() override;
 
 				void on_packet(const Json& packet) override;
 
