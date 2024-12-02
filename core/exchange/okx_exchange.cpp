@@ -343,7 +343,7 @@ namespace Keen
 			void OkxRestApi::on_query_time(const Json& packet, const Request& request)
 			{
 				AString server_time = DateTimeToString(DateTimeFromStringTime(packet["data"][0]["ts"]));
-				AString local_time = DateTimeToString(currentDateTime());
+				AString local_time = DateTimeToString(currentDateTime(), true);
 				AString msg = Printf("server time: %s, local time: %s", server_time.c_str(), local_time.c_str());
 				this->exchange->write_log(msg);
 			}

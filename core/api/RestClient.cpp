@@ -60,7 +60,7 @@ namespace Keen
 					if (request.on_failed)
 						request.on_failed(error.status(), request);
 					else
-						this->on_failed(error.status(), request);
+						this->on_failed(error, request);
 				})
 				.error([=, this](const std::exception& e)
 				{
@@ -118,14 +118,15 @@ namespace Keen
 			return request;
 		}
 
-		void RestClient::on_failed(int status_code, const Request& request)
+		void RestClient::on_failed(const Error& error, const Request& request)
 		{
-			LOGERROR("RestClient on failed ----------\n%s", request.__str__().c_str());
+			LOGERROR("RestClient on failed ----------\n\tcode:[%d] errorData:[%s] \n \trequest%s", 
+				error.status(), error.errorData().c_str(), request.__str__().c_str());
 		}
 
 		void RestClient::on_error(const std::exception& ex, const Request& request)
 		{
-			LOGERROR("RestClient on error ----------\n%s", this->exception_detail(ex, request).c_str());
+			LOGERROR("RestClient on error ----------\n\t%s", this->exception_detail(ex, request).c_str());
 		}
 
 		AString RestClient::exception_detail(const std::exception& ex, const Request& request)

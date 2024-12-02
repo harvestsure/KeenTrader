@@ -17,11 +17,22 @@ DateTime DateTimeFromStringTime(AString timestamp)
 	return tp;
 }
 
-AString DateTimeToString(const DateTime& date_time)
+AString DateTimeToString(const DateTime& date_time, bool local)
 {
-	AString ret = date::format("%FT%TZ", date_time);
+	std::time_t now_time = std::chrono::system_clock::to_time_t(date_time);
 
-	return ret;
+	std::tm* tm = nullptr;
+	if (local) {
+		tm = std::localtime(&now_time);
+	}
+	else {
+		tm = std::gmtime(&now_time);
+	}
+
+	std::stringstream ss;
+	ss << std::put_time(tm, "%FT%TZ");
+
+	return ss.str();
 }
 
 AString DateTimeToString(const DateTime& date_time, AString format)

@@ -8,7 +8,7 @@ extern KEEN_API_EXPORT DateTime DateTimeFromTimestamp(int64_t timestamp);
 
 extern KEEN_API_EXPORT DateTime DateTimeFromStringTime(AString timestamp);
 
-extern KEEN_API_EXPORT AString DateTimeToString(const DateTime& date_time);
+extern KEEN_API_EXPORT AString DateTimeToString(const DateTime& date_time, bool local = false);
 
 extern KEEN_API_EXPORT AString DateTimeToString(const DateTime& date_time, AString format);
 
