@@ -50,7 +50,7 @@ namespace Keen
 		{
 			storeRequest(requestId, std::move(callbacks));
 
-			auto do_http_request = [=]()
+			auto do_http_request = [=, this]()
 				{
 					httplib::Client cli(this->_url_base);
 
@@ -92,7 +92,7 @@ namespace Keen
 
 					bool success = response.code == 0 && response.status / 100 == 2;
 
-					InvokeToQueue([=]() {
+					InvokeToQueue([=, this]() {
 						HTTPResponseHandler h;
 						{
 							std::lock_guard<std::mutex> lock(_queue_mutex);

@@ -42,7 +42,7 @@ namespace Keen
 		{
 			Response res;
 			_sender->request<ResString>(this->sign(request))
-				.done([=](const ResString& response)
+				.done([=, this](const ResString& response)
 				{
 					try
 					{
@@ -56,13 +56,13 @@ namespace Keen
 							this->on_error(e, request);
 					}
 				})
-				.fail([=](const Error& error) {
+				.fail([=, this](const Error& error) {
 					if (request.on_failed)
 						request.on_failed(error.status(), request);
 					else
 						this->on_failed(error.status(), request);
 				})
-				.error([=](const std::exception& e)
+				.error([=, this](const std::exception& e)
 				{
 					if (request.on_error)
 						request.on_error(e, request);
