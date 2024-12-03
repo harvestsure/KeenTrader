@@ -33,3 +33,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     engine
     cta_strategy
 )
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/strategies
+)
