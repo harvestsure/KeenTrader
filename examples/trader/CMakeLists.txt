@@ -27,6 +27,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     cta_strategy
     r_break_strategy
 )
+if (CMAKE_GENERATOR MATCHES "Visual Studio")
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+    )
+endif()
 
 if(UNIX AND NOT APPLE)
     find_package(Threads REQUIRED)
