@@ -42,6 +42,15 @@ namespace Keen
                 std::forward<FunctorT>(functor)));
         }
 
+        template <class FunctorT>
+        void DelayToQueue(int seconds, FunctorT&& functor)
+        {
+            DelayOnMainLoop(seconds, new MessageWithFunctor<FunctorT>(
+                std::forward<FunctorT>(functor)));
+        }
+
         KEEN_API_EXPORT void InvokeOnMainLoop(MessageData *pdata);
+
+        KEEN_API_EXPORT void DelayOnMainLoop(int seconds, MessageData* pdata);
     }
 }

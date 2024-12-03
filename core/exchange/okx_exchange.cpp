@@ -523,7 +523,7 @@ namespace Keen
 
 			void OkxWebsocketPublicApi::subscribe(const SubscribeRequest& req)
 			{
-				this->subscribed[req.kt_symbol] = req;
+				this->subscribed[req.symbol] = req;
 
 				TickData tick{
 					.symbol = req.symbol,
