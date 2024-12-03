@@ -795,7 +795,7 @@ namespace Keen
 				fs::path file_path = entry.path();
 
 				AString ext = file_path.extension().string();
-				if (ext.compare(".dll") && ext.compare(".so"))
+				if (ext.compare(".dll") && ext.compare(".so") && ext.compare(".dylib"))
 				{
 					continue;
 				}
