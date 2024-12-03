@@ -18,22 +18,14 @@ namespace Keen
 		public:
 			asio::io_service& get_io_service()
 			{
-				static std::unique_ptr<asio::io_service> instance;
-				if (!instance)
-				{
-					instance = std::make_unique<asio::io_service>();
-				}
-				return *instance;
+				static asio::io_service instance;
+				return instance;
 			}
 
 			asio::strand<asio::io_context::executor_type>& get_strand()
 			{
-				static std::unique_ptr<asio::strand<asio::io_context::executor_type>> instance;
-				if (!instance)
-				{
-					instance = std::make_unique<asio::strand<asio::io_context::executor_type>>(get_io_service().get_executor());
-				}
-				return *instance;
+				static asio::strand<asio::io_context::executor_type> instance(get_io_service().get_executor());
+				return instance;
 			}
 		};
 
@@ -46,14 +38,14 @@ namespace Keen
 		{
 			auto& io_service = IOService::get_instance().get_io_service();
 
-			//try
+			try
 			{
 				io_service.run();
 			}
-			//catch (const std::exception& e)
+			catch (const std::exception& e)
 			{
-				//std::cerr << "Exception in run_main_event_loop: " << e.what() << std::endl;
-				//return 1;
+				std::cerr << "Exception in run_main_event_loop: " << e.what() << std::endl;
+				return 1;
 			}
 
 			return 0;
@@ -102,6 +94,21 @@ namespace Keen
 					pdata->Run();
 					delete pdata;
 				} 
+			});
+		}
+
+		void DelayOnMainLoop(int seconds, MessageData* pdata)
+		{
+			auto timer = std::make_shared<asio::steady_timer>(
+				IOService::get_instance().get_io_service(),
+				asio::chrono::seconds(seconds));
+
+			timer->async_wait([pdata, timer](const asio::error_code& /*e*/) {
+				if (pdata)
+				{
+					pdata->Run();
+					delete pdata;
+				}
 			});
 		}
 	}

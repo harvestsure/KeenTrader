@@ -49,7 +49,7 @@ void RBreakStrategy::on_start()
 {
 	write_log("Strategy launch");
 
-	load_bar(1, Interval::MINUTE);
+	// load_bar(1, Interval::MINUTE);
 }
 
 void RBreakStrategy::on_bar(const BarData& bar)

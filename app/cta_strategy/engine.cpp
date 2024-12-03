@@ -607,7 +607,8 @@ namespace Keen
 			/*
 			 * Init a strategy.
 			 */
-			this->init_executor->enqueue(std::bind(&CtaEngine::_init_strategy, this, _1), strategy_name);
+			// this->init_executor->enqueue(std::bind(&CtaEngine::_init_strategy, this, _1), strategy_name);
+			this->_init_strategy(strategy_name);
 		}
 
 		void CtaEngine::_init_strategy(AString strategy_name)

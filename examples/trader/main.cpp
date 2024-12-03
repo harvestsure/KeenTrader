@@ -91,7 +91,7 @@ int main()
 		trade_engine->connect(loaded_setting, name);
 		trade_engine->write_log(Printf("Connecting to %s interface", name.c_str()));
 	}
-
+	/*
 	std::thread t([=] {
 		std::this_thread::sleep_for(std::chrono::seconds(5));
 
@@ -124,19 +124,21 @@ int main()
 
 		okx->cancel_order(cancel_req);
 	});
+	*/
 
-	cta_engine->init_engine();
-	trade_engine->write_log("CTA strategy initialization completed");
+	DelayToQueue(5, [trade_engine, cta_engine]() {
+		cta_engine->init_engine();
+		trade_engine->write_log("CTA strategy initialization completed");
 
-	cta_engine->init_all_strategies();
-	std::this_thread::sleep_for(std::chrono::seconds(2)); // Leave enough time to complete strategy initialization;
-	trade_engine->write_log("CTA strategies are fully initialized");
+		cta_engine->init_all_strategies();
+		trade_engine->write_log("CTA strategies are fully initialized");
 
-	cta_engine->start_all_strategies();
-	trade_engine->write_log("All CTA strategies are activated");
+		//std::this_thread::sleep_for(std::chrono::seconds(2));
+		cta_engine->start_all_strategies();
+		trade_engine->write_log("All CTA strategies are activated");
+		});
 
 	run_main_event_loop();
-
 
 	SAFE_RELEASE(trade_engine);
 	SAFE_RELEASE(event_emitter);
