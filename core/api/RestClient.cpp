@@ -80,9 +80,6 @@ namespace Keen
 			Headers headers
 		)
 		{
-			std::promise<void> promise;
-			Response res;
-
 			Request request = Request{
 				.method = method,
 				.path = path,
@@ -91,26 +88,9 @@ namespace Keen
 				.data = data
 			};
 
-			_sender->request<ResString>(request)
-				.done([&](const ResString& response) {
-					//res = response;
-					promise.set_value();
-				})
-				.fail([&](const Error& error) {
-					res.code = error.code();
-					res.status = error.status();
-					res.reason = error.errorData();
-					promise.set_value();
-				})
-				.error([&](const std::exception& e) {
-					res.reason = e.what();
-					promise.set_value();
-				})
-				.send();
+			Response response = _sender->sync_request(request);
 
-			promise.get_future().get();
-
-			return res;
+			return response;
 		}
 
 		Request& RestClient::sign(Request& request)
