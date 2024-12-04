@@ -255,9 +255,9 @@ namespace Keen
 			return this->cta_engine->get_size(this);
 		}
 
-		void CtaTemplate::load_bar(int days, 
-			Interval interval/* = Interval::MINUTE*/, 
-			FnMut<void(BarData)> callback/* = nullptr*/, 
+		void CtaTemplate::load_bar(int days,
+			Interval interval/* = Interval::MINUTE*/,
+			FnMut<void(BarData)> callback/* = nullptr*/,
 			bool use_database/* = false*/)
 		{
 			/*
@@ -266,7 +266,12 @@ namespace Keen
 			if (!callback)
 				callback = std::bind(&CtaTemplate::on_bar, this, _1);
 
-			this->cta_engine->load_bar(this->kt_symbol, days, interval, callback, use_database);
+			std::list<BarData> bars = this->cta_engine->load_bar(this->kt_symbol, days, interval, callback, use_database);
+
+			for (const auto& bar : bars)
+			{
+				callback(bar);
+			}
 		}
 
 		void CtaTemplate::put_event()

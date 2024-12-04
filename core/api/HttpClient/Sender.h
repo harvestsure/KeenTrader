@@ -242,6 +242,8 @@ namespace Keen
 			template <typename Response>
 			[[nodiscard]] AsyncRequestBuilder<Response> request(const Request& request) noexcept;
 
+			[[nodiscard]] Response sync_request(const Request& request) noexcept;
+
 		private:
 			void storeRequest(const AString& requestId, HTTPResponseHandler&& callbacks);
 			void unregisterRequest(const AString& requestId);
