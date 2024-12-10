@@ -1153,49 +1153,38 @@ AString StringsConcat(const AStringVector & a_Strings, char a_Separator)
 
 AString generateUuid()
 {
-char buf[GUID_LEN] = {};
-
 #if defined(_WIN32)
+    char buf[GUID_LEN] = {};
     GUID guid;
 
     if (CoCreateGuid(&guid) != S_OK)
     {
-        return ""; // 返回空字符串表示错误
+        return "";
     }
 
-    // 使用 snprintf 代替 sprintf
     int result = snprintf(
         buf, sizeof(buf),
-        "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+        "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
         guid.Data1, guid.Data2, guid.Data3,
         guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3],
         guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
 
     if (result < 0 || static_cast<size_t>(result) >= sizeof(buf))
     {
-        return ""; // 格式化失败或缓冲区溢出
+        return "";
     }
+    
+    return buf;
 
 #else
-    uuid_t uu;
-    uuid_generate(uu);
+    uuid_t uuid;
+    char uuidStr[37];
 
-    int index = 0;
-    for (int i = 0; i < 16; ++i)
-    {
-        int len = (i < 15) ?
-            snprintf(buf + index, sizeof(buf) - index, "%02X-", uu[i]) :
-            snprintf(buf + index, sizeof(buf) - index, "%02X", uu[i]);
+    uuid_generate(uuid);
 
-        if (len < 0 || index + len >= static_cast<int>(sizeof(buf)))
-        {
-            return ""; // 格式化失败或缓冲区溢出
-        }
+    uuid_unparse_lower(uuid, uuidStr);
 
-        index += len;
-    }
+    return std::string(uuidStr);
 #endif
-
-    return buf;
 }
 
