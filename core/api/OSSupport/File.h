@@ -33,7 +33,7 @@ public:
 
 	int Read(void * a_Buffer, size_t a_NumBytes);
 
-	std::basic_string<std::byte> Read(size_t a_NumBytes);
+	ContiguousByteBuffer Read(size_t a_NumBytes);
 
 	int Write(const void * a_Buffer, size_t a_NumBytes);
 

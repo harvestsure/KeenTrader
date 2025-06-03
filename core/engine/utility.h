@@ -2,6 +2,7 @@
 
 #include <engine/object.h>
 
+#include <map>
 #include <filesystem>
 namespace fs = std::filesystem;
 
@@ -78,6 +79,16 @@ namespace Keen
 			}
 
 			return result;
+		}
+
+		template <typename K, typename V>
+		std::map<V, K> SwapMap(const std::map<K, V>& keyValueMap) {
+			std::map<V, K> swappedMap;
+			for (const auto& pair : keyValueMap) {
+				swappedMap[pair.second] = pair.first;
+			}
+			return swappedMap;
+
 		}
 
 		extern KEEN_ENGINE_EXPORT std::tuple<AString, Exchange> extract_kt_symbol(AString kt_symbol);

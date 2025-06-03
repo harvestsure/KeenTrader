@@ -85,8 +85,8 @@ typedef std::map<AString, AString> AStringMap;
 template <typename Signature>
 using FnMut = std::function<Signature>;
 
-using ContiguousByteBuffer = std::basic_string<std::byte>;
-using ContiguousByteBufferView = std::basic_string_view<std::byte>;
+using ContiguousByteBuffer = std::vector<std::byte>;
+using ContiguousByteBufferView = std::span<std::byte>;
 
 
 #include <nlohmann/json.hpp>

@@ -109,6 +109,8 @@ namespace Keen
 			void send_email(AString msg);
 
 			void sync_data();
+
+			void async_exec();
 		};
 
 

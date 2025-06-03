@@ -7,7 +7,6 @@
 #include <engine/converter.h>
 #include <event/event.h>
 #include <engine/utility.h>
-#include <api/OSSupport/ThreadPool.h>
 
 namespace fs = std::filesystem;
 using namespace std::placeholders;
@@ -29,9 +28,11 @@ namespace Keen
 		AString CtaEngine::data_filename = "cta_strategy_data.json";
 
 		CtaEngine::CtaEngine(TradeEngine* trade_engine, EventEmitter* event_emitter)
-			: BaseEngine(trade_engine, event_emitter, APP_NAME), engine_type(EngineType::LIVE), strategy_setting(Json::object()), strategy_data(Json::object())
+			: BaseEngine(trade_engine, event_emitter, APP_NAME)
+			, engine_type(EngineType::LIVE)
+			, strategy_setting(Json::object())
+			, strategy_data(Json::object())
 		{
-			init_executor = new ThreadPool(1);
 		}
 
 		CtaEngine::~CtaEngine()
@@ -43,9 +44,6 @@ namespace Keen
 			}
 
 			classes.clear();
-
-			delete init_executor;
-			init_executor = nullptr;
 		}
 
 		void CtaEngine::init_engine()
@@ -607,7 +605,6 @@ namespace Keen
 			/*
 			 * Init a strategy.
 			 */
-			// this->init_executor->enqueue(std::bind(&CtaEngine::_init_strategy, this, _1), strategy_name);
 			this->_init_strategy(strategy_name);
 		}
 
@@ -842,12 +839,12 @@ namespace Keen
 			/*
 			 * Sync strategy data into json file.
 			 */
-			Json data = strategy->get_variables();
-			data.erase("inited"); // Strategy status(inited, trading) should not be synced.
-			data.erase("trading");
+			//Json data = strategy->get_variables();
+			//data.erase("inited"); // Strategy status(inited, trading) should not be synced.
+			//data.erase("trading");
 
-			this->strategy_data[strategy->strategy_name] = data;
-			save_json(this->data_filename, this->strategy_data);
+			//this->strategy_data[strategy->strategy_name] = data;
+			//save_json(this->data_filename, this->strategy_data);
 		}
 
 		AStringList CtaEngine::get_all_strategy_class_names()
