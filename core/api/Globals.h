@@ -89,6 +89,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <span>
 #include <variant>
 #include <future>
 #include <functional>

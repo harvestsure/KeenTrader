@@ -18,6 +18,7 @@ namespace Keen
 			AString exchange_name;
 
 			float volume = 0;
+			float turnover = 0;
 			float open_interest = 0;
 			float last_price = 0;
 			float last_volume = 0;

@@ -180,9 +180,7 @@ namespace Keen
 			std::map<AString, AStringSet> strategy_orderid_map;             // strategy_name : orderid list
 
 			int stop_order_count = 0;                                       // for generating stop_orderid
-			std::map<AString, StopOrder> stop_orders;                       // stop_orderid: stop_order
-
-			ThreadPool *init_executor;
+			std::map<AString, StopOrder> stop_orders;                       // stop_orderid: stop_order\
 
 			AStringSet kt_tradeids;                                         // for filtering duplicate trade
 		};
