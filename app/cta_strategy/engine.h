@@ -109,7 +109,7 @@ namespace Keen
 
 			virtual int get_size(CtaTemplate* strategy);
 
-			virtual std::list<BarData> load_bar(AString kt_symbol, int days, Interval interval, FnMut<void(BarData)> callback = nullptr, bool use_database = false);
+			virtual std::list<BarData> load_bar(AString kt_symbol, float days, Interval interval, FnMut<void(BarData)> callback = nullptr, bool use_database = false);
 
 			void call_strategy_func(CtaTemplate *strategy, FnMut<void(std::any)> func, std::any params = nullptr);
 
@@ -180,9 +180,7 @@ namespace Keen
 			std::map<AString, AStringSet> strategy_orderid_map;             // strategy_name : orderid list
 
 			int stop_order_count = 0;                                       // for generating stop_orderid
-			std::map<AString, StopOrder> stop_orders;                       // stop_orderid: stop_order
-
-			ThreadPool *init_executor;
+			std::map<AString, StopOrder> stop_orders;                       // stop_orderid: stop_order\
 
 			AStringSet kt_tradeids;                                         // for filtering duplicate trade
 		};

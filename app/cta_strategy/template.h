@@ -102,13 +102,15 @@ namespace Keen
 
 			int get_size();
 
-			void load_bar(int days, Interval interval = Interval::MINUTE, FnMut<void(BarData)> callback = nullptr,bool use_database = false);
+			void load_bar(float days, Interval interval = Interval::MINUTE, FnMut<void(BarData)> callback = nullptr,bool use_database = false);
 
 			void put_event();
 
 			void send_email(AString msg);
 
 			void sync_data();
+
+			void async_exec();
 		};
 
 
