@@ -255,7 +255,7 @@ namespace Keen
 			return this->cta_engine->get_size(this);
 		}
 
-		void CtaTemplate::load_bar(int days,
+		void CtaTemplate::load_bar(float days,
 			Interval interval/* = Interval::MINUTE*/,
 			FnMut<void(BarData)> callback/* = nullptr*/,
 			bool use_database/* = false*/)

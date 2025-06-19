@@ -35,6 +35,8 @@ namespace Keen
 
 				void connect(const Json& setting) override;
 
+				void connect_ws_api();
+
 				void subscribe(const SubscribeRequest& req) override;
 
 				AString send_order(const OrderRequest& req) override;
@@ -51,14 +53,34 @@ namespace Keen
 
 				void on_order(const OrderData& order) override;
 
-				std::optional<OrderData> get_order(AString orderid) ;
+				std::optional<OrderData> get_order(const AString& orderid);
+
+				void on_contract(const ContractData& contract) override;
+
+				std::optional<ContractData> get_contract_by_symbol(const AString& symbol);
+
+				std::optional<ContractData> get_contract_by_name(const AString& name);
+
+				OrderData parse_order_data(const Json& data, const AString& gateway_name);
 
 			protected:
 				std::map<AString, OrderData> orders;
+				AStringSet local_orderids;
+				std::map<AString, ContractData> symbol_contract_map;
+				std::map<AString, ContractData> name_contract_map;
 
 				OkxRestApi* rest_api = nullptr;
-				OkxWebsocketPublicApi* ws_public_api = nullptr;
-				OkxWebsocketPrivateApi* ws_private_api = nullptr;
+				OkxWebsocketPublicApi* public_api = nullptr;
+				OkxWebsocketPrivateApi* private_api = nullptr;
+
+			private:
+				AString key;
+				AString secret;
+				AString passphrase;
+
+				AString proxy_host;
+				uint16_t proxy_port;
+				AString server;
 			};
 
 			class KEEN_EXCHANGE_EXPORT OkxRestApi : public RestClient
@@ -72,9 +94,9 @@ namespace Keen
 					AString key,
 					AString secret,
 					AString passphrase,
+					AString server,
 					AString proxy_host,
-					uint16_t proxy_port,
-					AString server
+					uint16_t proxy_port
 				);
 
 				void query_order();
@@ -83,7 +105,7 @@ namespace Keen
 
 				void on_query_order(const Json& packet, const Request& request);
 				void on_query_time(const Json& packet, const Request& request);
-				void on_instrument(const Json& packet, const Request& request);
+				void on_query_contract(const Json& packet, const Request& request);
 
 				void on_error(const std::exception& ex, const Request& request) override;
 
@@ -92,6 +114,8 @@ namespace Keen
 			protected:
 				OkxExchange* exchange;
 				AString exchange_name;
+
+				std::set<Product> product_ready;
 
 				AString key;
 				AString secret;
@@ -109,9 +133,9 @@ namespace Keen
 				OkxWebsocketPublicApi(OkxExchange* exchange);
 
 				void connect(
+					AString server,
 					AString proxy_host,
-					uint16_t proxy_port,
-					AString server
+					uint16_t proxy_port
 				);
 
 				void subscribe(const SubscribeRequest& req);
@@ -146,9 +170,9 @@ namespace Keen
 					AString key,
 					AString secret,
 					AString passphrase,
+					AString server,
 					AString proxy_host,
-					uint16_t proxy_port,
-					AString server
+					uint16_t proxy_port
 				);
 
 				void on_connected() override;
@@ -184,6 +208,7 @@ namespace Keen
 			protected:
 				OkxExchange* exchange;
 				AString exchange_name;
+				AStringSet &local_orderids;
 
 				AString key;
 				AString secret;
