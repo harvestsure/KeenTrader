@@ -314,7 +314,7 @@ namespace Keen
 			OrderType type;
 			float volume = 0;
 			float price = 0;
-			Offset offset = Offset::OPEN;
+			Offset offset = Offset::NONE;
 
 			AString reference;
 
@@ -377,6 +377,12 @@ namespace Keen
 			AString subject;
 			AString content;
 			AString receiver;
+		};
+
+		struct NoticeMessage
+		{
+			AString subject;
+			AString content;
 		};
 	}
 }

@@ -126,7 +126,7 @@ int main()
 	});
 	*/
 
-	DelayToQueue(5, [trade_engine, cta_engine]() {
+	DelayToQueue(10, [trade_engine, cta_engine]() {
 		cta_engine->init_engine();
 		trade_engine->write_log("CTA strategy initialization completed");
 

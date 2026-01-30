@@ -141,6 +141,7 @@ namespace Keen
 
         extern KEEN_ENGINE_EXPORT AString str_direction(Direction direction);
 		extern KEEN_ENGINE_EXPORT AString exchange_to_str(Exchange);
+        extern KEEN_ENGINE_EXPORT AString status_to_str(Status);
         extern KEEN_ENGINE_EXPORT AString interval_to_str(Interval);
 
 		extern KEEN_ENGINE_EXPORT Exchange str_to_exchange(AString);

@@ -18,6 +18,12 @@ namespace Keen
 			return AString(str_value);
 		}
 
+		AString status_to_str(Status status)
+		{
+			auto str_value = magic_enum::enum_name(status);
+			return AString(str_value);
+		}
+
 		AString interval_to_str(Interval interval)
 		{
 			auto str_value = magic_enum::enum_name(interval);

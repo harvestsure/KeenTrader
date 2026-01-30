@@ -25,7 +25,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     engine
     exchange
     cta_strategy
-    r_break_strategy
 )
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
     set_target_properties(${PROJECT_NAME} PROPERTIES

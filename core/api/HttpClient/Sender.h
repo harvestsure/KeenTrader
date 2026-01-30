@@ -262,5 +262,7 @@ namespace Keen
 		{
 			return AsyncRequestBuilder<Response>(this, request);
 		}
+
+		KEEN_API_EXPORT Response _http_request(const Request& request, const AString& url_base, const AString& proxy_host = AString(), uint16_t proxy_port = 0);
 	}
 }

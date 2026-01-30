@@ -11,12 +11,16 @@ namespace Keen
 			{ "log.console", true },
 			{ "log.file", true },
 
-			{ "email.server", "smtp.qq.com" },
+			{ "email.server", "" },
 			{ "email.port", 465 },
 			{ "email.username", "" },
 			{ "email.password", "" },
 			{ "email.sender", "" },
 			{ "email.receiver", "" },
+
+			{ "notice.route", "" },
+			{ "notice.token", "" },
+			{ "notice.chat_id", "" },
 
 			{ "rqdata.username", "" },
 			{ "rqdata.password", "" },

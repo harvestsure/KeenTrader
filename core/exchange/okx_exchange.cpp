@@ -42,54 +42,53 @@ namespace Keen
 				{"partially_filled", Status::PARTTRADED},
 				{"filled", Status::ALLTRADED},
 				{"canceled", Status::CANCELLED},
-				{"mmp_canceled", Status::CANCELLED}};
+				{"mmp_canceled", Status::CANCELLED} };
 
 			static std::map<AString, OrderType> ORDERTYPE_OKX2KT = {
 				{"limit", OrderType::LIMIT},
 				{"market", OrderType::MARKET},
 				{"fok", OrderType::FOK},
-				{"ioc", OrderType::FAK}};
+				{"ioc", OrderType::FAK} };
 
 			static std::map<OrderType, AString> ORDERTYPE_KT2OKX = SwapMap(ORDERTYPE_OKX2KT);
 
 			static std::map<AString, Direction> DIRECTION_OKX2KT = {
 				{"buy", Direction::LONG},
-				{"sell", Direction::SHORT}};
+				{"sell", Direction::SHORT} };
 
 			static std::map<Direction, AString> DIRECTION_KT2OKX = SwapMap(DIRECTION_OKX2KT);
-
-			static std::map<Direction, AString> POSSIZE_KT2OKX = {
-				{Direction::LONG, "long"},
-				{Direction::SHORT, "short"},
-				{Direction::NET, "net"}};
 
 			static std::map<Interval, AString> INTERVAL_KT2OKX = {
 				{Interval::MINUTE, "1m"},
 				{Interval::HOUR, "1H"},
-				{Interval::DAILY, "1D"}};
+				{Interval::DAILY, "1D"} };
 
 			static std::map<AString, Product> PRODUCT_OKX2KT = {
 				{"SWAP", Product::SWAP},
 				{"SPOT", Product::SPOT},
-				{"FUTURES", Product::FUTURES}};
+				{"FUTURES", Product::FUTURES} };
 
 			static std::map<Product, AString> PRODUCT_KT2OKX = SwapMap(PRODUCT_OKX2KT);
 
-			float get_float_value(const Json &data, AString key);
+			float get_float_value(const Json& data, AString key);
+
+			std::pair<AString, AString> get_side_pos(Direction direction, Offset offset, bool dualSide);
+
+			static bool g_dualSide = true; // dual-side mode
 
 
-			OkxExchange::OkxExchange(EventEmitter *event_emitter)
+			OkxExchange::OkxExchange(EventEmitter* event_emitter)
 				: BaseExchange(event_emitter, "OKX")
 			{
 				default_setting =
-					{
-						{"api_key", ""},
-						{"secret_key", ""},
-						{"passphrase", ""},
-						{"proxy_host", ""},
-						{"proxy_port", 0},
-						{"server", ""} //["REAL", "AWS", "DEMO"]
-					};
+				{
+					{"api_key", ""},
+					{"secret_key", ""},
+					{"passphrase", ""},
+					{"proxy_host", ""},
+					{"proxy_port", 0},
+					{"server", ""} //["REAL", "AWS", "DEMO"]
+				};
 
 				exchange = Exchange::OKX;
 
@@ -105,7 +104,7 @@ namespace Keen
 				SAFE_RELEASE(private_api);
 			}
 
-			void OkxExchange::connect(const Json &setting)
+			void OkxExchange::connect(const Json& setting)
 			{
 				this->key = setting.value("api_key", "");
 				this->secret = setting.value("secret_key", "");
@@ -140,17 +139,17 @@ namespace Keen
 					this->proxy_port);
 			}
 
-			void OkxExchange::subscribe(const SubscribeRequest &req)
+			void OkxExchange::subscribe(const SubscribeRequest& req)
 			{
 				this->public_api->subscribe(req);
 			}
 
-			AString OkxExchange::send_order(const OrderRequest &req)
+			AString OkxExchange::send_order(const OrderRequest& req)
 			{
 				return this->private_api->send_order(req);
 			}
 
-			void OkxExchange::cancel_order(const CancelRequest &req)
+			void OkxExchange::cancel_order(const CancelRequest& req)
 			{
 				this->private_api->cancel_order(req);
 			}
@@ -163,7 +162,7 @@ namespace Keen
 			{
 			}
 
-			std::list<BarData> OkxExchange::query_history(const HistoryRequest &req)
+			std::list<BarData> OkxExchange::query_history(const HistoryRequest& req)
 			{
 				return this->rest_api->query_history(req);
 			}
@@ -175,13 +174,13 @@ namespace Keen
 				this->private_api->stop();
 			}
 
-			void OkxExchange::on_order(const OrderData &order)
+			void OkxExchange::on_order(const OrderData& order)
 			{
 				this->orders[order.orderid] = order;
 				BaseExchange::on_order(order);
 			}
 
-			std::optional<OrderData> OkxExchange::get_order(const AString &orderid)
+			std::optional<OrderData> OkxExchange::get_order(const AString& orderid)
 			{
 				if (this->orders.count(orderid))
 				{
@@ -193,7 +192,7 @@ namespace Keen
 				}
 			}
 
-			void OkxExchange::on_contract(const ContractData &contract)
+			void OkxExchange::on_contract(const ContractData& contract)
 			{
 				this->symbol_contract_map[contract.symbol] = contract;
 				this->name_contract_map[contract.name] = contract;
@@ -201,17 +200,17 @@ namespace Keen
 				BaseExchange::on_contract(contract);
 			}
 
-			std::optional<ContractData> OkxExchange::get_contract_by_symbol(const AString &symbol)
+			std::optional<ContractData> OkxExchange::get_contract_by_symbol(const AString& symbol)
 			{
 				return GetWithNone(this->symbol_contract_map, symbol);
 			}
 
-			std::optional<ContractData> OkxExchange::get_contract_by_name(const AString &name)
+			std::optional<ContractData> OkxExchange::get_contract_by_name(const AString& name)
 			{
 				return GetWithNone(this->name_contract_map, name);
 			}
 
-			OrderData OkxExchange::parse_order_data(const Json &data, const AString &gateway_name)
+			OrderData OkxExchange::parse_order_data(const Json& data, const AString& gateway_name)
 			{
 				auto contract = this->get_contract_by_name(data["instId"]);
 
@@ -246,7 +245,7 @@ namespace Keen
 				return order;
 			}
 
-			OkxRestApi::OkxRestApi(OkxExchange *exchange)
+			OkxRestApi::OkxRestApi(OkxExchange* exchange)
 				: RestClient()
 			{
 
@@ -259,7 +258,7 @@ namespace Keen
 				this->simulated = false;
 			}
 
-			Request &OkxRestApi::sign(Request &request)
+			Request& OkxRestApi::sign(Request& request)
 			{
 				AString timestamp = generate_timestamp();
 
@@ -280,7 +279,7 @@ namespace Keen
 					{"OK-ACCESS-SIGN", signature},
 					{"OK-ACCESS-TIMESTAMP", timestamp},
 					{"OK-ACCESS-PASSPHRASE", this->passphrase},
-					{"Content-Type", "application/json"}};
+					{"Content-Type", "application/json"} };
 
 				if (this->simulated)
 					request.headers.insert(std::pair("x-simulated-trading", "1"));
@@ -313,7 +312,7 @@ namespace Keen
 					{"DEMO", DEMO_REST_HOST},
 				};
 
-				const AString &host = server_hosts.at(server);
+				const AString& host = server_hosts.at(server);
 
 				this->init(host, proxy_host, proxy_port);
 				this->start();
@@ -328,7 +327,7 @@ namespace Keen
 				Request request{
 					.method = "GET",
 					.path = "/api/v5/trade/orders-pending",
-					.callback = std::bind(&OkxRestApi::on_query_order, this, _1, _2)};
+					.callback = std::bind(&OkxRestApi::on_query_order, this, _1, _2) };
 
 				this->request(request);
 			}
@@ -338,7 +337,7 @@ namespace Keen
 				Request request{
 					.method = "GET",
 					.path = "/api/v5/public/time",
-					.callback = std::bind(&OkxRestApi::on_query_time, this, _1, _2)};
+					.callback = std::bind(&OkxRestApi::on_query_time, this, _1, _2) };
 
 				this->request(request);
 			}
@@ -347,22 +346,22 @@ namespace Keen
 			{
 				Json args = Json::array();
 
-				for (auto &[inst_type, type] : PRODUCT_OKX2KT)
+				for (auto& [inst_type, type] : PRODUCT_OKX2KT)
 				{
 					Request request{
 						.method = "GET",
 						.path = "/api/v5/public/instruments?instType=" + inst_type,
-						.callback = std::bind(&OkxRestApi::on_query_contract, this, _1, _2)};
+						.callback = std::bind(&OkxRestApi::on_query_contract, this, _1, _2) };
 
 					this->request(request);
 				}
 			}
 
-			void OkxRestApi::on_query_order(const Json &packet, const Request &request)
+			void OkxRestApi::on_query_order(const Json& packet, const Request& request)
 			{
-				for (const Json &order_info : packet["data"])
+				for (const Json& order_info : packet["data"])
 				{
-					const OrderData &order = this->exchange->parse_order_data(order_info, this->exchange_name);
+					const OrderData& order = this->exchange->parse_order_data(order_info, this->exchange_name);
 
 					this->exchange->on_order(order);
 				}
@@ -370,7 +369,7 @@ namespace Keen
 				this->exchange->write_log("Entrustment information query successful");
 			}
 
-			void OkxRestApi::on_query_time(const Json &packet, const Request &request)
+			void OkxRestApi::on_query_time(const Json& packet, const Request& request)
 			{
 				AString server_time = DateTimeToString(DateTimeFromStringTime(packet["data"][0]["ts"]));
 				AString local_time = DateTimeToString(currentDateTime(), true);
@@ -378,10 +377,10 @@ namespace Keen
 				this->exchange->write_log(msg);
 			}
 
-			void OkxRestApi::on_query_contract(const Json &packet, const Request &request)
+			void OkxRestApi::on_query_contract(const Json& packet, const Request& request)
 			{
 				AString instType;
-				for (const Json &d : packet["data"])
+				for (const Json& d : packet["data"])
 				{
 					AString name = d["instId"];
 					instType = d["instType"];
@@ -448,14 +447,14 @@ namespace Keen
 				}
 			}
 
-			void OkxRestApi::on_error(const std::exception &ex, const Request &request)
+			void OkxRestApi::on_error(const std::exception& ex, const Request& request)
 			{
 				AString msg = Printf("Trigger exception: %s, status code: message: %s\n", ex.what(), request.__str__().c_str());
 
 				fprintf(stderr, "%s", msg.c_str());
 			}
 
-			std::list<BarData> OkxRestApi::query_history(const HistoryRequest &req)
+			std::list<BarData> OkxRestApi::query_history(const HistoryRequest& req)
 			{
 				auto contract = this->exchange->get_contract_by_symbol(req.symbol);
 				if (!contract)
@@ -563,7 +562,7 @@ namespace Keen
 				return history;
 			}
 
-			OkxWebsocketPublicApi::OkxWebsocketPublicApi(OkxExchange *exchange)
+			OkxWebsocketPublicApi::OkxWebsocketPublicApi(OkxExchange* exchange)
 				: WebsocketClient()
 			{
 				this->exchange = exchange;
@@ -587,14 +586,14 @@ namespace Keen
 					{"DEMO", DEMO_PUBLIC_HOST},
 				};
 
-				const AString &host = server_hosts.at(server);
+				const AString& host = server_hosts.at(server);
 
 				this->init(host, proxy_host, proxy_port, 20);
 
 				this->start();
 			}
 
-			void OkxWebsocketPublicApi::subscribe(const SubscribeRequest &req)
+			void OkxWebsocketPublicApi::subscribe(const SubscribeRequest& req)
 			{
 				auto contract = this->exchange->get_contract_by_symbol(req.symbol);
 				if (!contract)
@@ -610,24 +609,24 @@ namespace Keen
 					.exchange = req.exchange,
 					.name = contract->name,
 					.datetime = currentDateTime(),
-					.exchange_name = this->exchange_name};
+					.exchange_name = this->exchange_name };
 
 				tick.__post_init__();
 
 				this->ticks[req.symbol] = tick;
 
-				const AStringList channels = {"tickers", "books5"};
+				const AStringList channels = { "tickers", "books5" };
 
 				Json args = Json::array();
 
-				for (auto &channel : channels)
+				for (auto& channel : channels)
 				{
-					args.push_back({{"channel", channel}, {"instId", contract->name}});
+					args.push_back({ {"channel", channel}, {"instId", contract->name} });
 				}
 
 				Json okx_req = {
 					{"op", "subscribe"},
-					{"args", args}};
+					{"args", args} };
 
 				this->send_packet(okx_req);
 			}
@@ -636,7 +635,7 @@ namespace Keen
 			{
 				this->exchange->write_log("Websocket Public API connection successful");
 
-				for (auto &[key, req] : subscribed)
+				for (auto& [key, req] : subscribed)
 					this->subscribe(req);
 			}
 
@@ -645,26 +644,26 @@ namespace Keen
 				this->exchange->write_log("Websocket Public API connection disconnected");
 			}
 
-			void OkxWebsocketPublicApi::on_packet(const Json &packet)
+			void OkxWebsocketPublicApi::on_packet(const Json& packet)
 			{
 				if (packet.count("event"))
 				{
-					const AString &event = packet["event"];
+					const AString& event = packet["event"];
 					if (event == "subscribe")
 					{
 						return;
 					}
 					else if (event == "error")
 					{
-						const int &code = packet["code"];
-						const AString &msg = packet["message"];
+						const int& code = packet["code"];
+						const AString& msg = packet["message"];
 						this->exchange->write_log(Printf("Websocket Public API request exception, status code: %d, information: %s", code, msg.c_str()));
 					}
 				}
 				else
 				{
-					const AString &channel = packet["arg"]["channel"];
-					const Json &data = packet["data"];
+					const AString& channel = packet["arg"]["channel"];
+					const Json& data = packet["data"];
 
 					auto callback = this->callbacks.find(channel);
 					if (callback != this->callbacks.end())
@@ -674,7 +673,7 @@ namespace Keen
 				}
 			}
 
-			void OkxWebsocketPublicApi::on_error(const std::exception &ex)
+			void OkxWebsocketPublicApi::on_error(const std::exception& ex)
 			{
 				AString msg = Printf("Triggered an exception, status code: {exception_type}, message: %s", ex.what());
 				this->exchange->write_log(msg);
@@ -682,14 +681,14 @@ namespace Keen
 				fprintf(stderr, "%s", msg.c_str());
 			}
 
-			void OkxWebsocketPublicApi::on_ticker(const Json &data)
+			void OkxWebsocketPublicApi::on_ticker(const Json& data)
 			{
-				for (const Json &d : data)
+				for (const Json& d : data)
 				{
-					const AString &symbol = d["instId"];
+					const AString& symbol = d["instId"];
 					float volume = JsonToFloat(d["vol24h"]);
 
-					TickData &tick = ticks[symbol];
+					TickData& tick = ticks[symbol];
 					tick.last_price = JsonToFloat(d["last"]);
 					tick.open_price = JsonToFloat(d["open24h"]);
 					tick.high_price = JsonToFloat(d["high24h"]);
@@ -704,16 +703,16 @@ namespace Keen
 				}
 			}
 
-			void OkxWebsocketPublicApi::on_depth(const Json &data)
+			void OkxWebsocketPublicApi::on_depth(const Json& data)
 			{
-				for (const Json &d : data)
+				for (const Json& d : data)
 				{
 					AString symbol = d["instId"];
 
-					TickData &tick = ticks[symbol];
+					TickData& tick = ticks[symbol];
 
-					const Json &bids = d["bids"];
-					const Json &asks = d["asks"];
+					const Json& bids = d["bids"];
+					const Json& asks = d["asks"];
 
 					tick.bid_price_1 = JsonToFloat(bids[0][0]);
 					tick.bid_volume_1 = JsonToFloat(bids[0][1]);
@@ -743,7 +742,7 @@ namespace Keen
 				}
 			}
 
-			OkxWebsocketPrivateApi::OkxWebsocketPrivateApi(OkxExchange *exchange)
+			OkxWebsocketPrivateApi::OkxWebsocketPrivateApi(OkxExchange* exchange)
 				: WebsocketClient(), local_orderids(exchange->local_orderids)
 			{
 				this->exchange = exchange;
@@ -760,7 +759,7 @@ namespace Keen
 					{"positions", std::bind(&OkxWebsocketPrivateApi::on_position, this, _1)},
 					{"order", std::bind(&OkxWebsocketPrivateApi::on_send_order, this, _1)},
 					{"cancel-order", std::bind(&OkxWebsocketPrivateApi::on_cancel_order, this, _1)},
-					{"error", std::bind(&OkxWebsocketPrivateApi::on_api_error, this, _1)}};
+					{"error", std::bind(&OkxWebsocketPrivateApi::on_api_error, this, _1)} };
 			}
 
 			void OkxWebsocketPrivateApi::connect(
@@ -783,7 +782,7 @@ namespace Keen
 					{"DEMO", DEMO_PRIVATE_HOST},
 				};
 
-				const AString &host = server_hosts.at(server);
+				const AString& host = server_hosts.at(server);
 
 				this->init(host, proxy_host, proxy_port, 20);
 
@@ -801,7 +800,7 @@ namespace Keen
 				this->exchange->write_log("Websocket Private API connection disconnected");
 			}
 
-			void OkxWebsocketPrivateApi::on_packet(const Json &packet)
+			void OkxWebsocketPrivateApi::on_packet(const Json& packet)
 			{
 				AString cb_name;
 				if (packet.count("event"))
@@ -824,7 +823,7 @@ namespace Keen
 				}
 			}
 
-			void OkxWebsocketPrivateApi::on_error(const std::exception &ex)
+			void OkxWebsocketPrivateApi::on_error(const std::exception& ex)
 			{
 				AString msg = Printf("Private channel triggers an exception, status code: {exception_type}, message: %s", ex.what());
 				this->exchange->write_log(msg);
@@ -832,15 +831,15 @@ namespace Keen
 				fprintf(stderr, "%s", msg.c_str());
 			}
 
-			void OkxWebsocketPrivateApi::on_api_error(const Json &packet)
+			void OkxWebsocketPrivateApi::on_api_error(const Json& packet)
 			{
 				AString code = packet["code"];
 				AString msg = packet["msg"];
 				this->exchange->write_log(Printf("Websocket Private API request failed, status code: %s, message: %s",
-												 code.c_str(), msg.c_str()));
+					code.c_str(), msg.c_str()));
 			}
 
-			void OkxWebsocketPrivateApi::on_login(const Json &packet)
+			void OkxWebsocketPrivateApi::on_login(const Json& packet)
 			{
 				if (packet["code"] == "0")
 				{
@@ -851,12 +850,12 @@ namespace Keen
 					this->exchange->write_log("Websocket Private API login failed");
 			}
 
-			void OkxWebsocketPrivateApi::on_order(const Json &packet)
+			void OkxWebsocketPrivateApi::on_order(const Json& packet)
 			{
-				const Json &data = packet["data"];
-				for (const Json &d : data)
+				const Json& data = packet["data"];
+				for (const Json& d : data)
 				{
-					const OrderData &order = this->exchange->parse_order_data(d, this->exchange_name);
+					const OrderData& order = this->exchange->parse_order_data(d, this->exchange_name);
 					this->exchange->on_order(order);
 
 					if (d["fillSz"] == "0")
@@ -878,25 +877,25 @@ namespace Keen
 						.price = JsonToFloat(d["fillPx"]),
 						.volume = trade_volume,
 						.datetime = DateTimeFromStringTime(d["uTime"]),
-						.exchange_name = this->exchange_name};
+						.exchange_name = this->exchange_name };
 					trade.__post_init__();
 
 					this->exchange->on_trade(trade);
 				}
 			}
 
-			void OkxWebsocketPrivateApi::on_account(const Json &packet)
+			void OkxWebsocketPrivateApi::on_account(const Json& packet)
 			{
 				if (packet["data"].size() == 0)
 					return;
 
-				const Json &buf = packet["data"][0];
-				for (const Json &detail : buf["details"])
+				const Json& buf = packet["data"][0];
+				for (const Json& detail : buf["details"])
 				{
 					AccountData account = AccountData{
 						.accountid = detail["ccy"],
 						.balance = JsonToFloat(detail["eq"]),
-						.exchange_name = this->exchange_name};
+						.exchange_name = this->exchange_name };
 					account.__post_init__();
 
 					account.available = detail.contains("availEq") ? JsonToFloat(detail["availEq"]) : 0.0;
@@ -906,10 +905,10 @@ namespace Keen
 				}
 			}
 
-			void OkxWebsocketPrivateApi::on_position(const Json &packet)
+			void OkxWebsocketPrivateApi::on_position(const Json& packet)
 			{
-				const Json &data = packet["data"];
-				for (const Json &d : data)
+				const Json& data = packet["data"];
+				for (const Json& d : data)
 				{
 					AString name = d["instId"];
 					auto contract = this->exchange->get_contract_by_name(name);
@@ -933,22 +932,22 @@ namespace Keen
 				}
 			}
 
-			void OkxWebsocketPrivateApi::on_send_order(const Json &packet)
+			void OkxWebsocketPrivateApi::on_send_order(const Json& packet)
 			{
-				const Json &data = packet["data"];
+				const Json& data = packet["data"];
 
 				if (packet["code"] != "0")
 				{
 					if (data.is_null())
 					{
-						OrderData &order = this->reqid_order_map[packet["id"]];
+						OrderData& order = this->reqid_order_map[packet["id"]];
 						order.status = Status::REJECTED;
 						this->exchange->on_order(order);
 						return;
 					}
 				}
 
-				for (const Json &d : data)
+				for (const Json& d : data)
 				{
 					const AString& code = d["sCode"];
 					if (code == "0")
@@ -963,23 +962,23 @@ namespace Keen
 
 					const AString& msg = d["sMsg"];
 					this->exchange->write_log(Printf("Commission failed, status code: %s, message: %s",
-													 code.c_str(), msg.c_str()));
+						code.c_str(), msg.c_str()));
 				}
 			}
 
-			void OkxWebsocketPrivateApi::on_cancel_order(const Json &packet)
+			void OkxWebsocketPrivateApi::on_cancel_order(const Json& packet)
 			{
 				if (packet["code"] != "0")
 				{
 					const AString& code = packet["code"];
 					const AString& msg = packet["msg"];
 					this->exchange->write_log(Printf("Order cancellation failed, status code: %s, message: %s",
-													 code.c_str(), msg.c_str()));
+						code.c_str(), msg.c_str()));
 					return;
 				}
 
-				const Json &data = packet["data"];
-				for (const Json &d : data)
+				const Json& data = packet["data"];
+				for (const Json& d : data)
 				{
 					const AString& code = d["sCode"];
 					if (code == "0")
@@ -987,18 +986,18 @@ namespace Keen
 
 					const AString& msg = d["sMsg"];
 					this->exchange->write_log(Printf("Order cancellation failed, status code: %s, message: %s",
-													 code.c_str(), msg.c_str()));
+						code.c_str(), msg.c_str()));
 				}
 			}
 
 			void OkxWebsocketPrivateApi::login()
 			{
 				auto getTime = []()
-				{
-					time_t t;
-					time(&t);
-					return Printf("%ld", t);
-				};
+					{
+						time_t t;
+						time(&t);
+						return Printf("%ld", t);
+					};
 
 				AString timestamp = getTime();
 
@@ -1009,11 +1008,11 @@ namespace Keen
 					{"apiKey", this->key},
 					{"passphrase", this->passphrase},
 					{"timestamp", timestamp},
-					{"sign", signature}};
+					{"sign", signature} };
 
 				Json req = {
 					{"op", "login"},
-					{"args", Json::array({args})}};
+					{"args", Json::array({args})} };
 
 				this->send_packet(req);
 			}
@@ -1022,17 +1021,19 @@ namespace Keen
 			{
 				Json okx_req = {
 					{"op", "subscribe"},
-					{"args",
-					 {{{"channel", "orders"},
-					   {"instType", "ANY"}},
-					  {{"channel", "account"}},
-					  {{"channel", "positions"},
-					   {"instType", "ANY"}}}}};
+					{ "args",
+						{
+							{ {"channel", "orders"}, {"instType", "ANY"} },
+							{ {"channel", "account"} },
+							{ {"channel", "positions"}, {"instType", "ANY"} }
+						}
+					}
+				};
 
 				this->send_packet(okx_req);
 			}
 
-			AString OkxWebsocketPrivateApi::send_order(const OrderRequest &req)
+			AString OkxWebsocketPrivateApi::send_order(const OrderRequest& req)
 			{
 				if (!ORDERTYPE_KT2OKX.count(req.type))
 				{
@@ -1053,14 +1054,16 @@ namespace Keen
 
 				AString orderid = std::to_string(this->connect_time) + count_str;
 
+				auto [side, posSide] = get_side_pos(req.direction, req.offset, g_dualSide);
+
 				Json args = {
 					{"instId", contract->name},
 					{"clOrdId", orderid},
-					{"side", DIRECTION_KT2OKX[req.direction]},
-					{"posSide", POSSIZE_KT2OKX[req.direction]},
+					{"side", side},
+					{"posSide", posSide},
 					{"ordType", ORDERTYPE_KT2OKX[req.type]},
 					{"px", std::to_string(req.price)},
-					{"sz", std::to_string(req.volume)}};
+					{"sz", std::to_string(req.volume)} };
 
 				if (contract->product == Product::SPOT)
 				{
@@ -1084,7 +1087,7 @@ namespace Keen
 				return order.kt_orderid;
 			}
 
-			void OkxWebsocketPrivateApi::cancel_order(const CancelRequest &req)
+			void OkxWebsocketPrivateApi::cancel_order(const CancelRequest& req)
 			{
 				auto contract = this->exchange->get_contract_by_symbol(req.symbol);
 				if (!contract)
@@ -1093,7 +1096,7 @@ namespace Keen
 					return;
 				}
 
-				Json args = {{"instId", contract->name}};
+				Json args = { {"instId", contract->name} };
 
 				if (this->local_orderids.count(req.orderid))
 					args["clOrdId"] = req.orderid;
@@ -1104,18 +1107,18 @@ namespace Keen
 				Json okx_req = {
 					{"id", std::to_string(this->reqid)},
 					{"op", "cancel-order"},
-					{"args", {args}}};
+					{"args", {args}} };
 				this->send_packet(okx_req);
 			}
 
 			AString okx_generate_signature(AString msg, AString secret_key)
 			{
 				AString sign;
-				unsigned char *mac = NULL;
+				unsigned char* mac = NULL;
 				unsigned int mac_length = 0;
 				AString key = secret_key;
 				HmacEncode("sha256", key.c_str(), key.length(), msg.c_str(), msg.length(), mac, mac_length);
-				sign = Base64Encode(AString((char *)mac, mac_length));
+				sign = Base64Encode(AString((char*)mac, mac_length));
 				return sign;
 			}
 
@@ -1128,12 +1131,49 @@ namespace Keen
 				return fmt;
 			}
 
-			float get_float_value(const Json &data, AString key)
+			float get_float_value(const Json& data, AString key)
 			{
 				AString data_str = data.value(key, "");
 				if (data_str.empty())
 					return 0.0;
 				return std::atof(data_str.c_str());
+			}
+
+			std::pair<AString, AString> get_side_pos(Direction direction, Offset offset, bool dualSide)
+			{
+				AString side = DIRECTION_KT2OKX[direction];
+				AString posSide = "net";
+
+				if (direction == Direction::LONG)
+				{
+					if (dualSide)
+					{
+						if (offset == Offset::OPEN)
+						{
+							posSide = "long";
+						}
+						else if (offset == Offset::CLOSE)
+						{
+							posSide = "short";
+						}
+					}
+				}
+				else if (direction == Direction::SHORT)
+				{
+					if (dualSide)
+					{
+						if (offset == Offset::OPEN)
+						{
+							posSide = "short";
+						}
+						else if (offset == Offset::CLOSE)
+						{
+							posSide = "long";
+						}
+					}
+				}
+
+				return make_pair(side, posSide);
 			}
 		}
 	}

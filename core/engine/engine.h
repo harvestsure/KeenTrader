@@ -101,6 +101,7 @@ namespace Keen
 			FnMut <OffsetConverter* (const AString&)> get_converter;
 
 			FnMut<void(AString, AString, AString)> send_email;
+			FnMut<void(AString, AString)> send_notice;
 
 		protected:
 			EventEmitter* event_emitter;
@@ -242,6 +243,31 @@ namespace Keen
 		protected:
 			bool _active;
 			std::queue<EmailMessage> _queue;
+			cCriticalSection	m_CS;
+			cEvent				m_QueueNonempty;
+			std::thread _thread;
+		};
+		
+		class NoticelEngine : public BaseEngine
+		{
+		public:
+			NoticelEngine(TradeEngine* trade_engine, EventEmitter* event_emitter);
+			~NoticelEngine();
+
+			void send_notice(AString subject, AString content);
+
+			void run();
+
+			void start();
+
+			void close();
+
+		protected:
+			bool _active;
+			AString	_route;
+			AString	_token;
+			AString	_chat_id;
+			std::queue<NoticeMessage> _queue;
 			cCriticalSection	m_CS;
 			cEvent				m_QueueNonempty;
 			std::thread _thread;

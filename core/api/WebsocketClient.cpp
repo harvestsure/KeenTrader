@@ -120,6 +120,10 @@ namespace Keen
 				if (m_callback)
 				{
 					m_callback->on_disconnected();
+					if (!m_stopped)
+					{
+						m_callback->reconnect();
+					}
 				}
 			}
 

@@ -1,6 +1,7 @@
 #include <api/Globals.h>
 #include "engine.h"
 #include <api/LoggerListeners.h>
+#include  <api/HttpClient/Sender.h>
 #include "engine/app.h"
 #include "engine/exchange.h"
 #include "event/event.h"
@@ -67,15 +68,16 @@ namespace Keen
 			this->add_engine(new LogEngine(this, this->event_emitter));
 			this->add_engine(new OmsEngine(this, this->event_emitter));
 			this->add_engine(new EmailEngine(this, this->event_emitter));
+			this->add_engine(new NoticelEngine(this, this->event_emitter));
 
 			this->send_order = [=, this](const OrderRequest& req, AString exchange_name)->AString
-			{
-				auto exchange = this->get_exchange(exchange_name);
-				if (exchange)
-					return exchange->send_order(req);
-				else
-					return "";
-			};
+				{
+					auto exchange = this->get_exchange(exchange_name);
+					if (exchange)
+						return exchange->send_order(req);
+					else
+						return "";
+				};
 		}
 
 		void TradeEngine::write_log(AString msg, AString source/* = ""*/)
@@ -265,7 +267,7 @@ namespace Keen
 
 		LogEngine::~LogEngine()
 		{
-			
+
 		}
 
 		void LogEngine::add_console_handler()
@@ -513,7 +515,7 @@ namespace Keen
 			else
 			{
 				std::list<OrderData> t_active_orders;
-				for (auto&[key, order] : this->active_orders)
+				for (auto& [key, order] : this->active_orders)
 				{
 					if (order.kt_symbol == kt_symbol)
 					{
@@ -614,7 +616,7 @@ namespace Keen
 
 				ASSERT(!this->_queue.empty());
 
-				EmailMessage &email_msg = this->_queue.front();
+				EmailMessage& email_msg = this->_queue.front();
 
 				this->trade_engine->write_log(email_msg.subject);
 
@@ -667,6 +669,117 @@ namespace Keen
 			}
 		}
 
+
+
+		//////////////////////////////////////////////////////////////////////
+		NoticelEngine::NoticelEngine(TradeEngine* trade_engine, EventEmitter* event_emitter)
+			: BaseEngine(trade_engine, event_emitter, "notice")
+		{
+			this->_active = false;
+			this->_route = SETTINGS["notice.route"];
+			this->_token = SETTINGS["notice.token"];
+			this->_chat_id = SETTINGS["notice.chat_id"];
+
+			this->trade_engine->send_notice = std::bind(&NoticelEngine::send_notice, this, _1, _2);
+		}
+
+		NoticelEngine::~NoticelEngine()
+		{
+	
+		}
+
+		void NoticelEngine::send_notice(AString subject, AString content)
+		{
+			// Start email engine when sending first email.
+			if (!this->_active)
+				this->start();
+
+
+			AString	route = SETTINGS["notice.route"];
+
+			NoticeMessage msg;
+			msg.subject = subject;
+			msg.content = content;
+		
+
+			cCSLock Lock(m_CS);
+			this->_queue.push(msg);
+			m_QueueNonempty.Set();
+		}
+
+		void NoticelEngine::run()
+		{
+			for (;;)
+			{
+				cCSLock Lock(m_CS);
+				while (this->_active && (this->_queue.size() == 0))
+				{
+					cCSUnlock Unlock(Lock);
+					m_QueueNonempty.Wait();
+				}
+				if (!this->_active)
+				{
+					return;
+				}
+
+				ASSERT(!this->_queue.empty());
+
+				NoticeMessage& notice_msg = this->_queue.front();
+
+				this->trade_engine->write_log(notice_msg.subject);
+
+				static AString url_base = "https://api.telegram.org";
+				AString path = Printf("/bot%s/sendMessage", this->_token.c_str());
+
+				api::Params params = { 
+					{"chat_id", this->_chat_id},
+					{"text", notice_msg.content},
+					{"parse_mode", "HTML"},
+				};
+
+				api::Request request = {
+				.method = "POST",
+				.path = path,
+				.params = params
+				};
+
+				api::Response resp = api::_http_request(request, url_base);
+
+				if (resp.status / 100 != 2)
+				{
+					AString msg = Printf("Failed to send notice, status code: %d, information: %s", resp.status,
+						resp.body.c_str());
+					this->trade_engine->write_log(msg);
+				}
+				else
+				{
+					Json data = Json::parse(resp.body); // get() is needed!
+
+				}
+	
+				this->_queue.pop();
+				Lock.Unlock();
+			}
+		}
+
+		void NoticelEngine::start()
+		{
+			this->_thread = std::thread(&NoticelEngine::run, this);
+			this->_active = true;
+		}
+
+		void NoticelEngine::close()
+		{
+			if (!this->_active)
+				return;
+
+			m_QueueNonempty.Set();
+
+			if (this->_thread.joinable())
+			{
+				this->_thread.join();
+			}
+		}
 	}
 }
 

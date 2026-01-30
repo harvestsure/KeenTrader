@@ -93,21 +93,18 @@ namespace Keen
 
 		int get_digits(double value) {
 			std::stringstream ss;
-			ss << std::fixed << value; // 使用定点表示法将浮点数转换为字符串
+			ss << std::fixed << value;
 			std::string valueStr = ss.str();
 
 			if (valueStr.find("e-") != std::string::npos) {
-				// 处理科学计数法
 				size_t pos = valueStr.find("e-");
 				return std::stoi(valueStr.substr(pos + 2));
 			}
 			else if (valueStr.find('.') != std::string::npos) {
-				// 处理普通小数
 				size_t pos = valueStr.find('.');
 				return valueStr.length() - pos - 1;
 			}
 			else {
-				// 无小数点
 				return 0;
 			}
 		}

@@ -19,9 +19,9 @@ namespace Keen
 			const AString WEBSOCKET_TRADE_HOST = "wss://stream.binance.com:9443/ws/";
 			const AString WEBSOCKET_DATA_HOST = "wss://stream.binance.com:9443/stream";
 
-			const AString TESTNET_REST_HOST = "https://testnet.binance.vision";
-			const AString TESTNET_WEBSOCKET_TRADE_HOST = "wss://testnet.binance.vision/ws/";
-			const AString TESTNET_WEBSOCKET_DATA_HOST = "wss://testnet.binance.vision/stream";
+			const AString TESTNET_REST_HOST = "https://demo-api.binance.com";
+			const AString TESTNET_WEBSOCKET_TRADE_HOST = "wss://demo-stream.binance.com:9443/ws/";
+			const AString TESTNET_WEBSOCKET_DATA_HOST = "wss://demo-stream.binance.com:9443/stream";
 
 			AString generate_signature(AString msg, AString secret_key);
 
