@@ -43,6 +43,7 @@ namespace Keen
                 this->rest_api = new BinanceRestApi(this);
                 this->md_api = new BinanceMdApi(this);
                 this->trade_api = new BinanceTradeApi(this);
+                this->user_api = new BinanceUserApi(this);
             }
 
             BinanceLinearExchange::~BinanceLinearExchange()
@@ -50,6 +51,7 @@ namespace Keen
                 SAFE_RELEASE(rest_api);
                 SAFE_RELEASE(md_api);
                 SAFE_RELEASE(trade_api);
+                SAFE_RELEASE(user_api);
             }
 
             void BinanceLinearExchange::connect(const Json& setting)
@@ -66,6 +68,8 @@ namespace Keen
                     this->server,
                     this->proxy_host,
                     this->proxy_port);
+
+                this->connect_ws_api();
             }
 
             void BinanceLinearExchange::process_timer_event(const Event& event)
@@ -123,6 +127,7 @@ namespace Keen
             void BinanceLinearExchange::close()
             {
                 this->rest_api->stop();
+                this->user_api->stop();
                 this->md_api->stop();
                 this->trade_api->stop();
             }
@@ -300,8 +305,132 @@ namespace Keen
 
             std::list<BarData> BinanceRestApi::query_history(const HistoryRequest& req)
             {
-                // Implement history query logic here
-                return {};
+                auto opt_contract = this->exchange->get_contract_by_symbol(req.symbol);
+                if (!opt_contract)
+                {
+                    this->exchange->write_log(Printf("Query kline history failed, symbol not found: %s", req.symbol.c_str()));
+                    return {};
+                }
+
+                ContractData contract = *opt_contract;
+
+                std::list<BarData> history;
+                int limit = 1500;
+
+                // start time in milliseconds
+                long long start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(req.start.time_since_epoch()).count();
+
+                while (true)
+                {
+                    AString path = "/fapi/v1/klines";
+
+                    Params params = {
+                        {"symbol", contract.name},
+                        {"interval", (req.interval == Interval::MINUTE) ? "1m" : (req.interval == Interval::HOUR) ? "1h" : "1d"},
+                        {"limit", std::to_string(limit)},
+                        {"startTime", std::to_string(start_ms)}
+                    };
+
+                    // add end time if provided (non-zero)
+                    if (req.end.time_since_epoch().count() != 0)
+                    {
+                        long long end_ms = std::chrono::duration_cast<std::chrono::milliseconds>(req.end.time_since_epoch()).count();
+                        params["endTime"] = std::to_string(end_ms);
+                    }
+
+                    Response resp = this->request("GET", path, params);
+
+                    if (resp.status / 100 != 2)
+                    {
+                        AString msg = Printf("Query kline history failed, status code: %d, information: %s", resp.status, resp.body.c_str());
+                        this->exchange->write_log(msg);
+                        break;
+                    }
+
+                    try {
+                        Json data = Json::parse(resp.body);
+
+                        if (!data.is_array() || data.empty())
+                        {
+                            AString msg = Printf("No kline history data is received, symbol: %s", req.symbol.c_str());
+                            this->exchange->write_log(msg);
+                            break;
+                        }
+
+                        std::vector<BarData> buf;
+
+                        for (const Json& row : data)
+                        {
+                            if (!row.is_array() || row.size() < 6)
+                                continue;
+
+                            long long ts = 0;
+                            if (row[0].is_number())
+                                ts = row[0].get<long long>();
+                            else
+                                ts = std::atoll(AString(row[0]).c_str());
+
+                            BarData bar;
+                            bar.symbol = req.symbol;
+                            bar.exchange = req.exchange;
+                            bar.datetime = DateTimeFromTimestamp(ts);
+                            bar.interval = req.interval;
+                            bar.volume = JsonToFloat(row[5]);
+                            // quote asset volume at index 7 if exists
+                            if (row.size() > 7)
+                                bar.open_interest = JsonToFloat(row[7]);
+                            bar.open_price = JsonToFloat(row[1]);
+                            bar.high_price = JsonToFloat(row[2]);
+                            bar.low_price = JsonToFloat(row[3]);
+                            bar.close_price = JsonToFloat(row[4]);
+                            bar.exchange_name = this->exchange_name;
+                            bar.__post_init__();
+
+                            buf.push_back(bar);
+                        }
+
+                        if (buf.empty())
+                            break;
+
+                        DateTime begin_dt = buf.front().datetime;
+                        DateTime end_dt = buf.back().datetime;
+
+                        for (auto &b : buf)
+                            history.push_back(b);
+
+                        AString msg = Printf("Query kline history finished, %s - %s, %s - %s",
+                            req.symbol.c_str(), interval_to_str(req.interval).c_str(),
+                            DateTimeToString(begin_dt).c_str(), DateTimeToString(end_dt).c_str());
+                        this->exchange->write_log(msg);
+
+                        // Break if latest data received
+                        if ((int)data.size() < limit || (req.end.time_since_epoch().count() != 0 && end_dt >= req.end))
+                            break;
+
+                        // move start to next bar
+                        long long add_ms = 60000; // default 1 minute
+                        if (req.interval == Interval::HOUR)
+                            add_ms = 60LL * 60LL * 1000LL;
+                        else if (req.interval == Interval::DAILY)
+                            add_ms = 24LL * 60LL * 60LL * 1000LL;
+
+                        start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_dt.time_since_epoch()).count() + add_ms;
+                    }
+                    catch (const std::exception& e)
+                    {
+                        this->exchange->write_log(Printf("JSON parsing failed: %s", e.what()));
+                        break;
+                    }
+                }
+
+                // sort by datetime
+                history.sort([](const BarData& a, const BarData& b) { return a.datetime < b.datetime; });
+
+                // remove last unclosed kline
+                if (!history.empty())
+                    history.pop_back();
+
+                return history;
             }
 
             void BinanceRestApi::start()
@@ -373,8 +502,8 @@ namespace Keen
                     {
                         AccountData account;
                         account.accountid = asset.value("asset", "");
-                        account.balance = asset.value("walletBalance", 0.0);
-                        account.frozen = asset.value("maintMargin", 0.0);
+                        account.balance = JsonToFloat(asset["walletBalance"]);
+                        account.frozen = JsonToFloat(asset["maintMargin"]);
                         account.exchange_name = this->exchange_name;
                         account.__post_init__();
                         this->exchange->on_account(account);

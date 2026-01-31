@@ -49,11 +49,19 @@ void RBreakStrategy::on_start()
 {
 	write_log("Strategy launch");
 
-	// load_bar(1, Interval::MINUTE);
+	load_bar(1, Interval::MINUTE);
 }
 
 void RBreakStrategy::on_bar(const BarData& bar)
 {
+	this->write_log(Printf("on_bar %s %s O:%.2f H:%.2f L:%.2f C:%.2f",
+		DateTimeToString(bar.datetime).c_str(),
+		bar.symbol.c_str(),
+		bar.open_price,
+		bar.high_price,
+		bar.low_price,
+		bar.close_price));
+		
 	this->cancel_all();
 
 	auto am = this->am;

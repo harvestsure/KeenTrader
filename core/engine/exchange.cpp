@@ -76,7 +76,8 @@ namespace Keen
 
 		void BaseExchange::write_log(const AString& msg)
 		{
-			LogData log = { .msg = msg, .exchange_name = this->exchange_name };
+			AString message = Printf("Exchange [%s]: ", this->exchange_name.c_str()) + msg;
+			LogData log = { .msg = message, .exchange_name = this->exchange_name };
 			this->on_log(log);
 		}
 
