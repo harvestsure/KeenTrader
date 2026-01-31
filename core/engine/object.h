@@ -233,6 +233,7 @@ namespace Keen
 			float pricetick;
 
 			float min_volume = 1;           // minimum trading volume of the contract
+			float max_volume = 0;
 			bool stop_supported = false;    // whether server supports stop order		
 			bool history_data = false;      // whether exchange provides bar history data
 			bool net_position = false;      // whether exchange uses net position volume

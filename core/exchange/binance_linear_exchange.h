@@ -51,8 +51,8 @@ namespace Keen
                 std::map<AString, ContractData> name_contract_map;
 
                 BinanceRestApi* rest_api = nullptr;
-                BinanceMdApi* public_api = nullptr;
-                BinanceTradeApi* private_api = nullptr;
+                BinanceMdApi* md_api = nullptr;
+                BinanceTradeApi* trade_api = nullptr;
                 BinanceUserApi* user_api = nullptr;
 
             private:
@@ -101,7 +101,7 @@ namespace Keen
 
             protected:
                 BinanceLinearExchange* exchange;
-                AString gateway_name;
+                AString exchange_name;
                 AString key;
                 AString secret;
                 uint64_t connect_time;
@@ -136,7 +136,11 @@ namespace Keen
 
             protected:
                 BinanceLinearExchange* exchange;
-                AString gateway_name;
+                AString exchange_name;
+                // connection info
+                AString server;
+                AString proxy_host;
+                uint16_t proxy_port = 0;
                 std::map<AString, SubscribeRequest> subscribed;
                 std::map<AString, TickData> ticks;
                 int reqid = 0;
@@ -166,7 +170,7 @@ namespace Keen
 
             protected:
                 BinanceLinearExchange* exchange;
-                AString gateway_name;
+                AString exchange_name;
                 AString key;
                 AString secret;
                 int reqid;
@@ -201,7 +205,7 @@ namespace Keen
 
             protected:
                 BinanceLinearExchange* exchange;
-                AString gateway_name;
+                AString exchange_name;
             };
         }
     }
