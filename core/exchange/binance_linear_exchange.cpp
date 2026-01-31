@@ -36,6 +36,39 @@ namespace Keen
                 {"NEXT_QUARTER", Product::FUTURES}
             };
 
+            static std::map<AString, Status> STATUS_BINANCE2KT = {
+                {"NEW", Status::NOTTRADED},
+                {"PARTIALLY_FILLED", Status::PARTTRADED},
+                {"FILLED", Status::ALLTRADED},
+                {"CANCELED", Status::CANCELLED},
+                {"EXPIRED", Status::CANCELLED},
+                {"REJECTED", Status::REJECTED}
+            };
+
+            static std::map<AString, Direction> DIRECTION_BINANCE2VT = {
+                {"BUY", Direction::LONG},
+                {"SELL", Direction::SHORT}
+            };
+
+            static std::map<Direction, AString> DIRECTION_VT2BINANCE = {
+                {Direction::LONG, "BUY"},
+                {Direction::SHORT, "SELL"}
+            };
+
+            static std::map<OrderType, AString> ORDERTYPE_VT2BINANCE = {
+                {OrderType::MARKET, "MARKET"},
+                {OrderType::STOP, "STOP_MARKET"},
+                {OrderType::LIMIT, "LIMIT"},
+                {OrderType::FAK, "LIMIT"},
+                {OrderType::FOK, "LIMIT"}
+            };
+
+            static std::map<AString, OrderType> ORDERTYPE_BINANCE2VT = {
+                {"MARKET", OrderType::MARKET},
+                {"STOP_MARKET", OrderType::STOP},
+                {"LIMIT", OrderType::LIMIT}
+            };
+
             BinanceLinearExchange::BinanceLinearExchange(EventEmitter* event_emitter)
                 : BaseExchange(event_emitter, "BINANCE")
                 , proxy_port(0)
@@ -629,7 +662,8 @@ namespace Keen
                     AString tif = d.value("timeInForce", "GTC");
 
                     AString name = d.value("symbol", "");
-                    auto opt_contract = this->exchange->get_contract_by_symbol(name + "_SWAP_BINANCE");
+                    // try standard swap symbol suffix first (consistent with contract creation)
+                    auto opt_contract = this->exchange->get_contract_by_symbol(name + "_SWAP");
                     if (!opt_contract)
                         opt_contract = this->exchange->get_contract_by_name(name);
                     if (!opt_contract)
@@ -638,12 +672,30 @@ namespace Keen
                     ContractData contract = *opt_contract;
 
                     OrderData order;
+                    // map order type (if available)
+                    OrderType order_type = OrderType::LIMIT;
+                    auto it_ot = ORDERTYPE_BINANCE2VT.find(type);
+                    if (it_ot != ORDERTYPE_BINANCE2VT.end())
+                        order_type = it_ot->second;
+                    if (order_type == OrderType::LIMIT)
+                    {
+                        if (tif == "IOC") order_type = OrderType::FAK;
+                        else if (tif == "FOK") order_type = OrderType::FOK;
+                    }
                     order.orderid = d.value("clientOrderId", "");
                     order.symbol = contract.symbol;
                     order.exchange = Exchange::BINANCE;
                     order.price = d.value("price", 0.0);
                     order.volume = d.value("origQty", 0.0);
                     order.traded = d.value("executedQty", 0.0);
+                    order.type = order_type;
+                    // map status using lookup table
+                    AString status = d.value("status", "");
+                    auto it_status = STATUS_BINANCE2KT.find(status);
+                    if (it_status != STATUS_BINANCE2KT.end())
+                        order.status = it_status->second;
+                    else
+                        order.status = Status::NOTTRADED;
                     order.datetime = currentDateTime();
                     order.exchange_name = this->exchange_name;
                     order.__post_init__();
@@ -874,6 +926,8 @@ namespace Keen
                         // ignore kline stream in C++ implementation (no extra field on TickData)
                         (void)data;
                     }
+
+                    // final generic tick push removed to avoid duplicate pushes
                 }
 
                 void BinanceMdApi::on_error(const std::exception& ex)
@@ -923,20 +977,166 @@ namespace Keen
 
             AString BinanceTradeApi::send_order(const OrderRequest& req)
             {
-                // Implement order sending logic
-                (void)req;
-                return AString();
+                // find contract
+                auto opt_contract = this->exchange->get_contract_by_symbol(req.symbol);
+                if (!opt_contract)
+                {
+                    this->exchange->write_log(Printf("Failed to send order, symbol not found: %s", req.symbol.c_str()));
+                    return AString();
+                }
+
+                ContractData contract = *opt_contract;
+
+                // ensure order_prefix
+                if (this->order_prefix.empty())
+                    this->order_prefix = DateTimeToString(currentDateTime(), "%y%m%d%H%M%S");
+
+                // generate order id
+                this->order_count += 1;
+                AString orderid = this->order_prefix + std::to_string(this->order_count);
+
+                // push submitting order
+                OrderData order = req.create_order_data(orderid, this->exchange_name);
+                this->exchange->on_order(order);
+
+                // build params
+                Params params;
+                params["apiKey"] = this->key;
+                params["symbol"] = contract.name;
+                auto it_side = DIRECTION_VT2BINANCE.find(req.direction);
+                if (it_side != DIRECTION_VT2BINANCE.end())
+                    params["side"] = it_side->second;
+                else
+                    params["side"] = "BUY";
+                // Round quantity to contract min_volume to avoid precision errors
+                float qty = (float)req.volume;
+                if (contract.min_volume > 0)
+                    qty = round_to(qty, contract.min_volume);
+                params["quantity"] = Printf("%g", qty).c_str();
+                params["newClientOrderId"] = orderid;
+
+                // map order type to Binance string
+                auto it_type = ORDERTYPE_VT2BINANCE.find(req.type);
+                AString b_type = (it_type != ORDERTYPE_VT2BINANCE.end()) ? it_type->second : AString("LIMIT");
+                params["type"] = b_type;
+
+                // stop orders include stopPrice
+                if (req.type == OrderType::STOP)
+                {
+                    float sp = (float)req.price;
+                    if (contract.pricetick > 0)
+                        sp = round_to(sp, contract.pricetick);
+                    params["stopPrice"] = Printf("%g", sp).c_str();
+                }
+
+                // LIMIT-like orders include price and timeInForce variations
+                if (b_type == "LIMIT")
+                {
+                    if (req.type == OrderType::FAK)
+                        params["timeInForce"] = "IOC";
+                    else if (req.type == OrderType::FOK)
+                        params["timeInForce"] = "FOK";
+                    else
+                        params["timeInForce"] = "GTC";
+
+                    // Round price to contract pricetick to avoid precision errors
+                    float fprice = (float)req.price;
+                    if (contract.pricetick > 0)
+                        fprice = round_to(fprice, contract.pricetick);
+                    params["price"] = Printf("%g", fprice).c_str();
+                }
+
+                // sign params
+                this->sign(params);
+
+                // register callback and order mapping
+                this->reqid += 1;
+                this->reqid_callback_map[this->reqid] = std::bind(&BinanceTradeApi::on_send_order, this, _1);
+                this->reqid_order_map[this->reqid] = order;
+
+                // build packet
+                Json params_json = Json::object();
+                for (auto &p : params)
+                    params_json[p.first] = p.second;
+
+                Json packet = {
+                    {"id", this->reqid},
+                    {"method", "order.place"},
+                    {"params", params_json}
+                };
+
+                this->send_packet(packet);
+
+                return order.kt_orderid;
             }
 
             void BinanceTradeApi::cancel_order(const CancelRequest& req)
             {
-                (void)req;
+                auto opt_contract = this->exchange->get_contract_by_symbol(req.symbol);
+                if (!opt_contract)
+                {
+                    this->exchange->write_log(Printf("Failed to cancel order, symbol not found: %s", req.symbol.c_str()));
+                    return;
+                }
+
+                ContractData contract = *opt_contract;
+
+                Params params;
+                params["apiKey"] = this->key;
+                params["symbol"] = contract.name;
+                params["origClientOrderId"] = req.orderid;
+
+                this->sign(params);
+
+                this->reqid += 1;
+                this->reqid_callback_map[this->reqid] = std::bind(&BinanceTradeApi::on_cancel_order, this, _1);
+
+                Json params_json = Json::object();
+                for (auto &p : params)
+                    params_json[p.first] = p.second;
+
+                Json packet = {
+                    {"id", this->reqid},
+                    {"method", "order.cancel"},
+                    {"params", params_json}
+                };
+
+                this->send_packet(packet);
             }
 
             void BinanceTradeApi::sign(Params& params)
             {
-                // stub: no-op
-                (void)params;
+                // Add timestamp in milliseconds
+                long long timestamp = (long long)(time(nullptr) * 1000);
+                params["timestamp"] = std::to_string(timestamp);
+
+                // Create ordered payload string from params
+                std::vector<std::pair<std::string, std::string>> items;
+                for (auto &p : params)
+                    items.emplace_back(p.first, p.second);
+                std::sort(items.begin(), items.end(), [](auto &a, auto &b){ return a.first < b.first; });
+
+                std::string payload;
+                for (size_t i = 0; i < items.size(); ++i)
+                {
+                    if (i) payload += "&";
+                    payload += items[i].first + "=" + items[i].second;
+                }
+
+                // HMAC-SHA256 signature
+                unsigned char* mac = nullptr;
+                unsigned int mac_len = 0;
+                int rc = HmacEncode("sha256", this->secret.c_str(), (unsigned int)this->secret.length(), payload.c_str(), (unsigned int)payload.length(), mac, mac_len);
+                std::string signature;
+                if (rc == 0 && mac && mac_len > 0)
+                {
+                    std::vector<unsigned char> outbuf(mac_len * 2 + 1);
+                    hex_str(mac, mac_len, outbuf.data());
+                    signature.assign((char*)outbuf.data());
+                    free(mac);
+                }
+
+                params["signature"] = signature;
             }
 
             void BinanceTradeApi::on_connected()
@@ -961,12 +1161,35 @@ namespace Keen
 
             void BinanceTradeApi::on_send_order(const Json& packet)
             {
-                (void)packet;
+                if (!packet.contains("error"))
+                    return;
+
+                const Json& error = packet["error"];
+                int error_code = error.value("code", 0);
+                AString error_msg = error.value("msg", "");
+
+                this->exchange->write_log(Printf("Order rejected, code: %d, message: %s", error_code, error_msg.c_str()));
+
+                int id = packet.value("id", 0);
+                auto it = this->reqid_order_map.find(id);
+                if (it != this->reqid_order_map.end())
+                {
+                    OrderData order = it->second;
+                    order.status = Status::REJECTED;
+                    this->exchange->on_order(order);
+                }
             }
 
             void BinanceTradeApi::on_cancel_order(const Json& packet)
             {
-                (void)packet;
+                if (!packet.contains("error"))
+                    return;
+
+                const Json& error = packet["error"];
+                int error_code = error.value("code", 0);
+                AString error_msg = error.value("msg", "");
+
+                this->exchange->write_log(Printf("Cancel rejected, code: %d, message: %s", error_code, error_msg.c_str()));
             }
 
             void BinanceTradeApi::on_error(const std::exception& ex)
@@ -1027,12 +1250,150 @@ namespace Keen
 
             void BinanceUserApi::on_account(const Json& packet)
             {
-                (void)packet;
+                if (!packet.contains("a"))
+                    return;
+
+                const Json& a = packet["a"];
+
+                // balances
+                if (a.contains("B") && a["B"].is_array())
+                {
+                    for (const Json& acc : a["B"]) {
+                        AccountData account;
+                        account.accountid = acc.value("a", "");
+                        account.balance = JsonToFloat(acc.value("wb", 0.0));
+                        double cw = JsonToFloat(acc.value("cw", 0.0));
+                        account.frozen = account.balance - cw;
+                        account.exchange_name = this->exchange_name;
+                        account.__post_init__();
+
+                        if (account.balance != 0.0)
+                            this->exchange->on_account(account);
+                    }
+                }
+
+                // positions
+                if (a.contains("P") && a["P"].is_array())
+                {
+                    for (const Json& pos : a["P"]) {
+                        AString ps = pos.value("ps", "");
+                        if (ps != "BOTH")
+                            continue;
+
+                        // volume may be string or number
+                        double volume = 0.0;
+                        if (pos.contains("pa"))
+                            volume = JsonToFloat(pos["pa"]);
+
+                        AString name = pos.value("s", "");
+                        auto opt_contract = this->exchange->get_contract_by_name(name);
+                        if (!opt_contract)
+                            continue;
+
+                        ContractData contract = *opt_contract;
+
+                        PositionData position;
+                        position.symbol = contract.symbol;
+                        position.exchange = Exchange::BINANCE;
+                        position.direction = Direction::NET;
+                        position.volume = (float)volume;
+                        position.price = JsonToFloat(pos.value("ep", 0.0));
+                        position.pnl = JsonToFloat(pos.value("up", 0.0));
+                        position.exchange_name = this->exchange_name;
+                        position.__post_init__();
+
+                        this->exchange->on_position(position);
+                    }
+                }
             }
 
             void BinanceUserApi::on_order(const Json& packet)
             {
-                (void)packet;
+                if (!packet.contains("o"))
+                    return;
+
+                const Json& ord = packet["o"];
+
+                // determine order type using mapping
+                AString type = ord.value("o", "");
+                AString tif = ord.value("f", "GTC");
+                OrderType order_type = OrderType::LIMIT;
+                auto it_ot = ORDERTYPE_BINANCE2VT.find(type);
+                if (it_ot != ORDERTYPE_BINANCE2VT.end())
+                    order_type = it_ot->second;
+                // adjust LIMIT by timeInForce
+                if (order_type == OrderType::LIMIT)
+                {
+                    if (tif == "IOC") order_type = OrderType::FAK;
+                    else if (tif == "FOK") order_type = OrderType::FOK;
+                }
+
+                // find contract by exchange name
+                AString name = ord.value("s", "");
+                auto opt_contract = this->exchange->get_contract_by_name(name);
+                if (!opt_contract)
+                    return;
+
+                ContractData contract = *opt_contract;
+
+                // build order
+                OrderData order;
+                order.orderid = ord.value("c", "");
+                order.symbol = contract.symbol;
+                order.exchange = Exchange::BINANCE;
+                order.price = JsonToFloat(ord.value("p", 0.0));
+                order.volume = JsonToFloat(ord.value("q", 0.0));
+                order.traded = JsonToFloat(ord.value("z", 0.0));
+                order.type = order_type;
+                AString side = ord.value("S", "");
+                auto it_dir = DIRECTION_BINANCE2VT.find(side);
+                if (it_dir != DIRECTION_BINANCE2VT.end())
+                    order.direction = it_dir->second;
+                else
+                    order.direction = Direction::LONG;
+
+                // map status using lookup table
+                AString status = ord.value("X", "");
+                auto it_status = STATUS_BINANCE2KT.find(status);
+                if (it_status != STATUS_BINANCE2KT.end())
+                    order.status = it_status->second;
+                else
+                    order.status = Status::NOTTRADED;
+
+                long long evt = packet.value("E", 0LL);
+                if (evt > 0)
+                    order.datetime = DateTimeFromTimestamp(evt);
+                else
+                    order.datetime = currentDateTime();
+
+                order.exchange_name = this->exchange_name;
+                order.__post_init__();
+
+                this->exchange->on_order(order);
+
+                // trades
+                double trade_volume = JsonToFloat(ord.value("l", 0.0));
+                trade_volume = round_to((float)trade_volume, contract.min_volume);
+                if (trade_volume <= 0.0)
+                    return;
+
+                TradeData trade;
+                trade.symbol = order.symbol;
+                trade.exchange = order.exchange;
+                trade.orderid = order.orderid;
+                trade.tradeid = ord.value("t", "");
+                trade.direction = order.direction;
+                trade.price = JsonToFloat(ord.value("L", 0.0));
+                trade.volume = (float)trade_volume;
+                long long ttime = ord.value("T", 0LL);
+                if (ttime > 0)
+                    trade.datetime = DateTimeFromTimestamp(ttime);
+                else
+                    trade.datetime = currentDateTime();
+                trade.exchange_name = this->exchange_name;
+                trade.__post_init__();
+
+                this->exchange->on_trade(trade);
             }
 
             void BinanceUserApi::on_disconnected(int status_code, const AString& msg)
