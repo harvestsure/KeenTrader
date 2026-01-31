@@ -4,7 +4,7 @@
 #include <engine/engine.h>
 #include <engine/utility.h>
 #include <exchange/okx_exchange.h>
-#include <exchange/binance_exchange.h>
+#include <exchange/binance_linear_exchange.h>
 
 #include <app/cta_strategy/cta_strategy.h>
 #include <app/cta_strategy/engine.h>
@@ -71,8 +71,8 @@ int main()
 	EventEmitter* event_emitter = MakeEventEmitter();
 	TradeEngine* trade_engine = new TradeEngine(event_emitter);
 
-	auto okx = trade_engine->add_exchange<okx::OkxExchange>();
-	//trade_engine->add_exchange<binance::BinanceExchange>();
+	// auto okx = trade_engine->add_exchange<okx::OkxExchange>();
+	trade_engine->add_exchange<binance::BinanceLinearExchange>();
 
 	CtaEngine* cta_engine = dynamic_cast<CtaEngine*>(trade_engine->add_app<CtaStrategyApp>());
 	trade_engine->write_log("Main engine was created successfully");

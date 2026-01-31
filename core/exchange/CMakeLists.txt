@@ -2,7 +2,7 @@ set(PROJECT_NAME exchange)
 
 set(Header_Files
     "algo_hmac.h"
-    "binance_exchange.h"
+    "binance_linear_exchange.h"
     "okx_exchange.h"
     "utils.h"
 )
@@ -10,7 +10,7 @@ source_group("Header Files" FILES ${Header_Files})
 
 set(Source_Files
     "algo_hmac.cpp"
-    "binance_exchange.cpp"
+    "binance_linear_exchange.cpp"
     "okx_exchange.cpp"
     "utils.cpp"
 )

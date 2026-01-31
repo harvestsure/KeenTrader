@@ -58,6 +58,8 @@ namespace Keen
 
 			virtual const Json& get_default_setting() const;
 
+			AString get_exchange_name() const { return this->exchange_name; }
+
 		protected:
 			Json default_setting;
 
