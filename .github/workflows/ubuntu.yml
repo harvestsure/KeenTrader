@@ -23,8 +23,8 @@ jobs:
             cxx: "clang++-16"
             os: "ubuntu-24.04"
 
-    name: "${{ matrix.compiler.cc }}"
-    runs-on: ${{ matrix.compiler.os }}
+    name: "${{ matrix.cc }}"
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -40,13 +40,13 @@ jobs:
       shell: bash
       run: |
         set -e
-        if [[ "${{ matrix.compiler.cc }}" == "clang"* ]]; then
+        if [[ "${{ matrix.cc }}" == "clang"* ]]; then
           sudo apt update
-          sudo apt install -y ${{ matrix.compiler.cc }}
-        elif [[ "${{ matrix.compiler.cc }}" == "gcc"* ]]; then
+          sudo apt install -y ${{ matrix.cc }}
+        elif [[ "${{ matrix.cc }}" == "gcc"* ]]; then
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
           sudo apt update
-          sudo apt install -y ${{ matrix.compiler.cxx }}
+          sudo apt install -y ${{ matrix.cxx }}
         fi
 
     - name: Install dependencies
@@ -59,7 +59,7 @@ jobs:
         rm -rf build
         mkdir build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }}
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
         cmake --build . -j 4 --config Release
         ctest --output-on-failure -C Release
 
