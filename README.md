@@ -1,5 +1,11 @@
 # KeenTrader
 
+## Status
+
+[![windows](https://github.com/harvestsure/KeenTrader/actions/workflows/windows.yml/badge.svg)](https://github.com/harvestsure/KeenTrader/actions/workflows/windows.yml)
+[![ubuntu](https://github.com/harvestsure/KeenTrader/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/harvestsure/KeenTrader/actions/workflows/ubuntu.yml)
+[![macos](https://github.com/harvestsure/KeenTrader/actions/workflows/macos.yml/badge.svg)](https://github.com/harvestsure/KeenTrader/actions/workflows/macos.yml)
+
 ## Description
 
 KeenTrader is a lightweight, high-performance quantitative trading and connectivity engine framework written in C++. It provides a unified foundation for market data, order management, and strategy execution. The project uses CMake for cross-platform builds.

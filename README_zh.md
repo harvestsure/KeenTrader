@@ -1,5 +1,11 @@
 # KeenTrader（中文说明）
 
+## 状态
+
+[![windows](https://github.com/harvestsure/KeenTrader/actions/workflows/windows.yml/badge.svg)](https://github.com/harvestsure/KeenTrader/actions/workflows/windows.yml)
+[![ubuntu](https://github.com/harvestsure/KeenTrader/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/harvestsure/KeenTrader/actions/workflows/ubuntu.yml)
+[![macos](https://github.com/harvestsure/KeenTrader/actions/workflows/macos.yml/badge.svg)](https://github.com/harvestsure/KeenTrader/actions/workflows/macos.yml)
+
 ## 项目简介
 
 `KeenTrader` 是一个以 C++ 编写的轻量级、高性能量化交易与接入引擎框架。它为行情获取、委托管理和策略执行提供了统一且可扩展的基础设施，便于在多交易所环境下开发与运行自动化交易策略。
