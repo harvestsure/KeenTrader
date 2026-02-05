@@ -58,7 +58,7 @@ namespace Keen
 				})
 				.fail([=, this](const Error& error) {
 					if (request.on_failed)
-						request.on_failed(error.status(), request);
+						request.on_failed(error, request);
 					else
 						this->on_failed(error, request);
 				})

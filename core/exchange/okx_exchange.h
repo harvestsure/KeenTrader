@@ -63,7 +63,6 @@ namespace Keen
 
 				OrderData parse_order_data(const Json& data, const AString& gateway_name);
 
-				// CryptoExchange 虚函数实现
 				bool set_position_mode(PositionMode mode) override;
 				bool set_leverage(const AString& symbol, int leverage, const Json& params = Json::object()) override;
 
@@ -85,6 +84,7 @@ namespace Keen
 				AString proxy_host;
 				uint16_t proxy_port;
 				AString server;
+				bool hedge_mode = false;
 			};
 
 			class KEEN_EXCHANGE_EXPORT OkxRestApi : public RestClient
@@ -99,6 +99,7 @@ namespace Keen
 					AString secret,
 					AString passphrase,
 					AString server,
+					bool hedge_mode,
 					AString proxy_host,
 					uint16_t proxy_port
 				);
@@ -107,8 +108,7 @@ namespace Keen
 				void query_time();
 				void query_contract();
 				
-				// 持仓模式和杠杆设置 API
-				void set_position_mode(const AString& mode);
+				void set_position_mode(PositionMode mode);
 				void set_leverage(const AString& symbol, int leverage);
 
 				void on_query_order(const Json& packet, const Request& request);
@@ -130,6 +130,8 @@ namespace Keen
 				AString key;
 				AString secret;
 				AString passphrase;
+
+				bool hedge_mode = false;
 
 				bool simulated;
 

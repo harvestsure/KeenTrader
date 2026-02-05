@@ -117,8 +117,6 @@ namespace Keen
 								}
 							}
 							else {
-								LOGWARN("%s", request.__str__().c_str());
-
 								if (h.onFail) {
 									Error error(response.code, response.status, response.body);
 									(*h.onFail)(requestId, error);

@@ -94,11 +94,13 @@ namespace Keen
                 this->proxy_host = setting.value("proxy_host", "");
                 this->proxy_port = setting.value("proxy_port", 0);
                 this->server = setting.value("server", "");
+                this->hedge_mode = setting.value("hedge_mode", false);
 
                 this->rest_api->connect(
                     this->key,
                     this->secret,
                     this->server,
+                    this->hedge_mode,
                     this->proxy_host,
                     this->proxy_port);
 
@@ -167,28 +169,27 @@ namespace Keen
 
             bool BinanceLinearExchange::set_position_mode(PositionMode mode)
             {
-                // 首先更新本地状态
+                // First update local state
                 if (!CryptoExchange::set_position_mode(mode))
                 {
                     return false;
                 }
 
-                // 调用 REST API 设置持仓模式
-                AString mode_str = (mode == PositionMode::ONE_WAY) ? "true" : "false";
-                this->rest_api->set_position_mode(mode_str);
+                // Call REST API to set position mode
+                this->rest_api->set_position_mode(mode);
                 
                 return true;
             }
 
             bool BinanceLinearExchange::set_leverage(const AString& symbol, int leverage, const Json& params)
             {
-                // 首先更新本地状态
+                // First update local state
                 if (!CryptoExchange::set_leverage(symbol, leverage, params))
                 {
                     return false;
                 }
 
-                // 调用 REST API 设置杠杆
+                // Call REST API to set leverage
                 this->rest_api->set_leverage(symbol, leverage);
                 
                 return true;
@@ -306,11 +307,13 @@ namespace Keen
                 AString key,
                 AString secret,
                 AString server,
+                bool hedge_mode,
                 AString proxy_host,
                 uint16_t proxy_port)
             {
                 this->key = key;
                 this->secret = secret;
+                this->hedge_mode = hedge_mode;
                 this->proxy_port = proxy_port;
                 this->proxy_host = proxy_host;
                 this->server = server;
@@ -555,14 +558,31 @@ namespace Keen
                 this->request(request);
             }
 
-            void BinanceRestApi::set_position_mode(const AString& mode)
+            void BinanceRestApi::set_position_mode(PositionMode mode)
             {
-                Params params = {{"dualSidePosition", mode}};
+                AString mode_str = (mode == PositionMode::HEDGE) ? "true" : "false";
+
+                Params params = {{"dualSidePosition", mode_str}};
                 Request request{
                     .method = "POST",
-                    .path = "/fapi/v1/positionSideDual",
+                    .path = "/fapi/v1/positionSide/dual",
                     .params = params,
-                    .callback = std::bind(&BinanceRestApi::on_set_position_mode, this, _1, _2)
+                    .callback = std::bind(&BinanceRestApi::on_set_position_mode, this, _1, _2),
+                    .on_failed = [this](const Error& error, const Request& request)
+                    {
+                        const AString errorData = error.errorData();
+                        if (errorData.find("\"code\":-4059") != AString::npos)
+                        {
+                            this->exchange->write_log("No need to change position side. It is already set.");
+                        }
+                        else
+                        {
+                            const AString msg = Printf("Set position mode failed, status code: %d, information: %s",
+                                error.status(), errorData.c_str());
+
+                            this->exchange->write_log(msg);
+                        }
+                    }
                 };
                 this->request(request);
             }
@@ -636,6 +656,7 @@ namespace Keen
                 this->time_offset = (int)(local_time - server_time);
                 this->exchange->write_log(Printf("Server time updated, local offset: %dms", this->time_offset));
 
+                this->set_position_mode(hedge_mode ? PositionMode::HEDGE : PositionMode::ONE_WAY);
                 this->query_contract();
             }
 
@@ -788,17 +809,13 @@ namespace Keen
 
             void BinanceRestApi::on_set_position_mode(const Json& packet, const Request& request)
             {
-                if (packet.contains("dualSidePosition"))
+                if (packet.contains("code") && packet["code"] == 200)
                 {
-                    bool success = packet["dualSidePosition"] == true;
-                    if (success)
-                    {
-                        this->exchange->write_log("设置持仓模式成功");
-                    }
-                    else
-                    {
-                        this->exchange->write_log("设置持仓模式失败");
-                    }
+                    this->exchange->write_log("Set position mode succeeded");
+                }
+                else
+                {
+                    this->exchange->write_log("Set position mode failed");
                 }
             }
 
@@ -808,12 +825,12 @@ namespace Keen
                 {
                     AString symbol = packet["symbol"];
                     int leverage = packet["leverage"];
-                    AString msg = Printf("为 %s 设置杠杆成功: %d 倍", symbol.c_str(), leverage);
+                    AString msg = Printf("Set leverage for %s succeeded: %dx", symbol.c_str(), leverage);
                     this->exchange->write_log(msg);
                 }
                 else
                 {
-                    this->exchange->write_log("设置杠杆失败：返回数据错误");
+                    this->exchange->write_log("Set leverage failed: invalid response");
                 }
             }
 
@@ -1105,6 +1122,12 @@ namespace Keen
                 auto it_type = ORDERTYPE_VT2BINANCE.find(req.type);
                 AString b_type = (it_type != ORDERTYPE_VT2BINANCE.end()) ? it_type->second : AString("LIMIT");
                 params["type"] = b_type;
+
+                // set position side for hedge mode
+                if (this->exchange->hedge_mode)
+                {
+                    params["positionSide"] = (req.direction == Direction::LONG) ? "LONG" : "SHORT";
+                }
 
                 // stop orders include stopPrice
                 if (req.type == OrderType::STOP)
@@ -1427,9 +1450,9 @@ namespace Keen
                 order.orderid = ord.value("c", "");
                 order.symbol = contract.symbol;
                 order.exchange = Exchange::BINANCE;
-                order.price = JsonToFloat(ord.value("p", 0.0));
-                order.volume = JsonToFloat(ord.value("q", 0.0));
-                order.traded = JsonToFloat(ord.value("z", 0.0));
+                order.price = JsonToFloat(ord["p"]);
+                order.volume = JsonToFloat(ord["q"]);
+                order.traded = JsonToFloat(ord["z"]);
                 order.type = order_type;
                 AString side = ord.value("S", "");
                 auto it_dir = DIRECTION_BINANCE2VT.find(side);
@@ -1458,7 +1481,7 @@ namespace Keen
                 this->exchange->on_order(order);
 
                 // trades
-                double trade_volume = JsonToFloat(ord.value("l", 0.0));
+                double trade_volume = JsonToFloat(ord["l"]);
                 trade_volume = round_to((float)trade_volume, contract.min_volume);
                 if (trade_volume <= 0.0)
                     return;
@@ -1469,7 +1492,7 @@ namespace Keen
                 trade.orderid = order.orderid;
                 trade.tradeid = ord.value("t", "");
                 trade.direction = order.direction;
-                trade.price = JsonToFloat(ord.value("L", 0.0));
+                trade.price = JsonToFloat(ord["L"]);
                 trade.volume = (float)trade_volume;
                 long long ttime = ord.value("T", 0LL);
                 if (ttime > 0)

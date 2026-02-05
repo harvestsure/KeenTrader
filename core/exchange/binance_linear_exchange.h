@@ -69,6 +69,7 @@ namespace Keen
                 AString proxy_host;
                 uint16_t proxy_port;
                 AString server;
+                bool hedge_mode;
             };
 
             class BinanceRestApi : public RestClient
@@ -81,6 +82,7 @@ namespace Keen
                     AString key,
                     AString secret,
                     AString server,
+                    bool hedge_mode,
                     AString proxy_host,
                     uint16_t proxy_port
                 );
@@ -94,8 +96,7 @@ namespace Keen
                 void start_user_stream();
                 void keep_user_stream();
                 
-                // 持仓模式和杠杆设置 API
-                void set_position_mode(const AString& mode);
+                void set_position_mode(PositionMode mode);
                 void set_leverage(const AString& symbol, int leverage);
                 
                 void on_query_order(const Json& packet, const Request& request);
@@ -127,6 +128,7 @@ namespace Keen
                 AString server;
                 AString proxy_host;
                 uint16_t proxy_port = 0;
+                bool hedge_mode = false;
             };
 
             class BinanceMdApi : public WebsocketClient

@@ -113,12 +113,14 @@ namespace Keen
 				this->proxy_host = setting.value("proxy_host", "");
 				this->proxy_port = setting.value("proxy_port", 0);
 				this->server = setting.value("server", "");
+				this->hedge_mode = setting.value("hedge_mode", false);
 
 				this->rest_api->connect(
 					this->key,
 					this->secret,
 					this->passphrase,
 					this->server,
+					this->hedge_mode,
 					this->proxy_host,
 					this->proxy_port);
 			}
@@ -176,28 +178,23 @@ namespace Keen
 
 			bool OkxExchange::set_position_mode(PositionMode mode)
 			{
-				// 首先更新本地状态
 				if (!CryptoExchange::set_position_mode(mode))
 				{
 					return false;
 				}
 
-				// 调用 REST API 设置持仓模式
-				AString mode_str = (mode == PositionMode::ONE_WAY) ? "long_short_mode" : "net_mode";
-				this->rest_api->set_position_mode(mode_str);
+				this->rest_api->set_position_mode(mode);
 				
 				return true;
 			}
 
 			bool OkxExchange::set_leverage(const AString& symbol, int leverage, const Json& params)
 			{
-				// 首先更新本地状态
 				if (!CryptoExchange::set_leverage(symbol, leverage, params))
 				{
 					return false;
 				}
 
-				// 调用 REST API 设置杠杆
 				this->rest_api->set_leverage(symbol, leverage);
 				
 				return true;
@@ -321,12 +318,14 @@ namespace Keen
 				AString secret,
 				AString passphrase,
 				AString server,
+				bool hedge_mode,
 				AString proxy_host,
 				uint16_t proxy_port)
 			{
 				this->key = key;
 				this->secret = secret /*.encode()*/;
 				this->passphrase = passphrase;
+				this->hedge_mode = hedge_mode;
 
 				if (server == "DEMO")
 				{
@@ -348,6 +347,7 @@ namespace Keen
 				this->exchange->write_log("REST API started");
 
 				this->query_time();
+				this->set_position_mode(this->hedge_mode ? PositionMode::HEDGE : PositionMode::ONE_WAY);
 				this->query_contract();
 			}
 
@@ -386,16 +386,33 @@ namespace Keen
 				}
 			}
 
-			void OkxRestApi::set_position_mode(const AString& mode)
+			void OkxRestApi::set_position_mode(PositionMode mode)
 			{
+				AString mode_str = (mode == PositionMode::HEDGE) ? "long_short_mode" : "net_mode";
+
 				Json body = {
-					{"posMode", mode}
+					{"posMode", mode_str}
 				};
 				Request request{
 					.method = "POST",
-					.path = "/api/v5/account/set-positionmode",
+					.path = "/api/v5/account/set-position-mode",
 					.data = body.dump(),
-					.callback = std::bind(&OkxRestApi::on_set_position_mode, this, _1, _2)
+					.callback = std::bind(&OkxRestApi::on_set_position_mode, this, _1, _2),
+					.on_failed = [this](const Error& error, const Request& request)
+                    {
+                        const AString errorData = error.errorData();
+                        // if (errorData.find("\"code\":-4059") != AString::npos)
+                        // {
+                        //     this->exchange->write_log("No need to change position side. It is already set.");
+                        // }
+                        // else
+                        {
+                            const AString msg = Printf("Set position mode failed, status code: %d, information: %s",
+                                error.status(), errorData.c_str());
+
+                            this->exchange->write_log(msg);
+                        }
+                    }
 				};
 				this->request(request);
 			}
@@ -513,12 +530,12 @@ namespace Keen
 					AString code = packet["code"];
 					if (code == "0")
 					{
-						this->exchange->write_log("设置持仓模式成功");
+						this->exchange->write_log("Set position mode succeeded");
 					}
 					else
 					{
-						AString msg = packet.value("msg", "未知错误");
-						this->exchange->write_log("设置持仓模式失败: " + msg);
+						AString msg = packet.value("msg", "Unknown error");
+						this->exchange->write_log("Set position mode failed: " + msg);
 					}
 				}
 			}
@@ -1151,16 +1168,18 @@ namespace Keen
 
 				AString orderid = std::to_string(this->connect_time) + count_str;
 
-				auto [side, posSide] = get_side_pos(req.direction, req.offset, g_dualSide);
+			// 根据持仓模式决定是否为双向模式
+			bool is_hedge_mode = (this->exchange->get_position_mode() == PositionMode::HEDGE);
+			auto [side, posSide] = get_side_pos(req.direction, req.offset, is_hedge_mode);
 
-				Json args = {
-					{"instId", contract->name},
-					{"clOrdId", orderid},
-					{"side", side},
-					{"posSide", posSide},
-					{"ordType", ORDERTYPE_KT2OKX[req.type]},
-					{"px", std::to_string(req.price)},
-					{"sz", std::to_string(req.volume)} };
+			Json args = {
+				{"instId", contract->name},
+				{"clOrdId", orderid},
+				{"side", side},
+				{"posSide", posSide},
+				{"ordType", ORDERTYPE_KT2OKX[req.type]},
+				{"px", std::to_string(req.price)},
+				{"sz", std::to_string(req.volume)} };
 
 				if (contract->product == Product::SPOT)
 				{

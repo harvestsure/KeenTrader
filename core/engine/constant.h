@@ -140,8 +140,8 @@ namespace Keen
         };
 
         enum class PositionMode {
-            ONE_WAY,    // 单向持仓模式
-            HEDGE       // 双向/对冲持仓模式
+            ONE_WAY,
+            HEDGE 
         };
 
         extern KEEN_ENGINE_EXPORT AString str_direction(Direction direction);

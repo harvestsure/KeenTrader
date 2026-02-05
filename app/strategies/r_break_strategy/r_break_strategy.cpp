@@ -162,6 +162,14 @@ void RBreakStrategy::on_stop()
 void RBreakStrategy::on_tick(const TickData& tick)
 {
 	bg->update_tick(tick);
+
+	static int index = 0;
+
+	if (index == 1) {
+		this->Buy(2100, 0.1);
+	}
+
+	index++;
 }
 
 void RBreakStrategy::on_trade(const TradeData& trade)

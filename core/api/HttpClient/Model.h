@@ -6,13 +6,14 @@ namespace Keen
 {
 	namespace api
 	{
+		class Error;
 		class Request;
 		using Headers = std::map<std::string, std::string>;
 		using Params = std::map<std::string, std::string>;
 		using RequestData = std::variant<Json, AString>;
 
 		using CALLBACK_TYPE = std::function<void(const Json&, const Request&)>;
-		using ON_FAILED_TYPE = std::function<void(int, const Request&)>;
+		using ON_FAILED_TYPE = std::function<void(const Error&, const Request&)>;
 		using ON_ERROR_TYPE = std::function<void(const std::exception&, const Request&)>;
 		using CONNECTED_TYPE = std::function<void(const Request&)>;
 
