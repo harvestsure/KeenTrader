@@ -75,8 +75,8 @@ int main()
 	event_emitter->Register(EVENT_CTA_LOG, std::bind(&LogEngine::process_log_event, log_engine, std::placeholders::_1));
 	trade_engine->write_log("Register log event listeners");
 
-	// auto okx = trade_engine->add_exchange<okx::OkxExchange>();
-	trade_engine->add_exchange<binance::BinanceLinearExchange>();
+	auto okx = trade_engine->add_exchange<okx::OkxExchange>();
+	// trade_engine->add_exchange<binance::BinanceLinearExchange>();
 
 	CtaEngine* cta_engine = dynamic_cast<CtaEngine*>(trade_engine->add_app<CtaStrategyApp>());
 	trade_engine->write_log("Main engine was created successfully");

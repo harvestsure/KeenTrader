@@ -228,6 +228,7 @@ namespace Keen
 			AString symbol;
 			Exchange exchange;
 			AString name;
+			int instIdCode = 0;
 			Product product;
 			float size;
 			float pricetick;

@@ -459,6 +459,7 @@ namespace Keen
 				for (const Json& d : packet["data"])
 				{
 					AString name = d["instId"];
+					int instIdCode = JsonToInt(d["instIdCode"]);
 					instType = d["instType"];
 					Product product = PRODUCT_OKX2KT[instType];
 					bool net_position = true;
@@ -468,36 +469,11 @@ namespace Keen
 					else
 						size = JsonToFloat(d["ctMult"]);
 
-					//std::string symbol;
-
-					//switch (product)
-					//{
-					//case Product::SPOT:
-					//{
-					//	ReplaceString(name, "-", "");
-					//	symbol = name + "_SPOT_OKX";
-					//}
-					//break;
-					//case Product::SWAP:
-					//{
-					//	auto parts = StringSplit(name, "-");
-					//	symbol = parts[0] + parts[1] + "_SWAP_OKX";
-					//}
-					//break;
-					//case Product::FUTURES:
-					//{
-					//	auto parts = StringSplit(name, "-");
-					//	symbol = parts[0] + parts[1] + "_" + parts[2] + "_OKX";
-					//}
-					//break;
-					//default:
-					//	break;
-					//}
-
 					ContractData contract{
 						.symbol = name,
 						.exchange = Exchange::OKX,
 						.name = name,
+						.instIdCode = instIdCode,
 						.product = product,
 						.size = size,
 						.pricetick = JsonToFloat(d["tickSz"]),
@@ -1052,31 +1028,49 @@ namespace Keen
 
 				if (packet["code"] != "0")
 				{
-					if (data.is_null())
+					// API call itself failed
+					const AString& msg = packet.value("msg", "Unknown error");
+					this->exchange->write_log(Printf("Send order API failed, code: %s, message: %s",
+						packet["code"].get<AString>().c_str(), msg.c_str()));
+					
+					if (!data.is_null() && !data.empty())
 					{
-						OrderData& order = this->reqid_order_map[packet["id"]];
-						order.status = Status::REJECTED;
-						this->exchange->on_order(order);
-						return;
+						int id = packet.value("id", 0);
+						AString id_str = std::to_string(id);
+						auto it = this->reqid_order_map.find(id_str);
+						if (it != this->reqid_order_map.end())
+						{
+							OrderData order = it->second;
+							order.status = Status::REJECTED;
+							this->exchange->on_order(order);
+							this->reqid_order_map.erase(it);
+						}
 					}
+					return;
 				}
 
-				for (const Json& d : data)
+				// Check individual order results
+				if (data.is_array() && !data.empty())
 				{
-					const AString& code = d["sCode"];
-					if (code == "0")
-						return;
+					for (const Json& d : data)
+					{
+						const AString& code = d.value("sCode", "0");
+						if (code != "0")
+						{
+							// Order rejected
+							const AString& orderid = d.value("clOrdId", "");
+							const AString& msg = d.value("sMsg", "Unknown error");
+							this->exchange->write_log(Printf("Order rejected - clOrdId: %s, code: %s, message: %s",
+								orderid.c_str(), code.c_str(), msg.c_str()));
 
-					const AString& orderid = d["clOrdId"];
-					std::optional<OrderData> order = this->exchange->get_order(orderid);
-					if (!order.has_value())
-						return;
-					order->status = Status::REJECTED;
-					this->exchange->on_order(order.value());
-
-					const AString& msg = d["sMsg"];
-					this->exchange->write_log(Printf("Commission failed, status code: %s, message: %s",
-						code.c_str(), msg.c_str()));
+							std::optional<OrderData> order = this->exchange->get_order(orderid);
+							if (order.has_value())
+							{
+								order->status = Status::REJECTED;
+								this->exchange->on_order(order.value());
+							}
+						}
+					}
 				}
 			}
 
@@ -1162,40 +1156,90 @@ namespace Keen
 					return AString();
 				}
 
+				// Check if contract name is valid
+				if (contract->name.empty())
+				{
+					this->exchange->write_log(Printf("Send order failed, contract name is empty for symbol: %s", req.symbol.c_str()));
+					return AString();
+				}
+
 				this->order_count += 1;
 				AString count_str = std::to_string(this->order_count);
 				count_str = Rjust(count_str, 6, '0');
 
 				AString orderid = std::to_string(this->connect_time) + count_str;
 
-			// 根据持仓模式决定是否为双向模式
-			bool is_hedge_mode = (this->exchange->get_position_mode() == PositionMode::HEDGE);
-			auto [side, posSide] = get_side_pos(req.direction, req.offset, is_hedge_mode);
+				// 根据持仓模式决定是否为双向模式
+				bool is_hedge_mode = (this->exchange->get_position_mode() == PositionMode::HEDGE);
+				auto [side, posSide] = get_side_pos(req.direction, req.offset, is_hedge_mode);
 
-			Json args = {
-				{"instId", contract->name},
-				{"clOrdId", orderid},
-				{"side", side},
-				{"posSide", posSide},
-				{"ordType", ORDERTYPE_KT2OKX[req.type]},
-				{"px", std::to_string(req.price)},
-				{"sz", std::to_string(req.volume)} };
-
-				if (contract->product == Product::SPOT)
+				// Validate side and posSide
+				if (side.empty())
 				{
-					args["tdMode"] = "cash";
+					this->exchange->write_log(Printf("Send order failed, invalid side direction: %d", req.direction));
+					return AString();
+				}
+
+				// Get order type
+				AString order_type;
+				if (ORDERTYPE_KT2OKX.count(req.type))
+				{
+					order_type = ORDERTYPE_KT2OKX[req.type];
 				}
 				else
 				{
-					args["tdMode"] = "cross";
+					this->exchange->write_log(Printf("Send order failed, order type not found: %d", req.type));
+					return AString();
 				}
+
+				// Format price and volume properly for OKX API
+				AString price_str = Printf("%.10g", req.price);
+				AString volume_str = Printf("%.10g", req.volume);
+
+				// Build args array with proper order and types
+				Json args = Json::array();
+				Json order_obj = Json::object();
+				
+				// Use instIdCode as priority, fallback to instId
+				if (contract->instIdCode > 0) {
+					order_obj["instIdCode"] = contract->instIdCode;
+				} else {
+					order_obj["instId"] = contract->name;
+				}
+				
+				order_obj["clOrdId"] = orderid;
+				order_obj["side"] = side;
+				order_obj["posSide"] = posSide;
+				order_obj["ordType"] = order_type;
+				order_obj["px"] = price_str;
+				order_obj["sz"] = volume_str;
+
+				if (contract->product == Product::SPOT)
+				{
+					order_obj["tdMode"] = "cash";
+				}
+				else
+				{
+					order_obj["tdMode"] = "cross";
+				}
+
+				args.push_back(order_obj);
+
+				// Log the order details for debugging
+				this->exchange->write_log(Printf("Sending order - symbol: %s, instIdCode: %d, instId: %s, side: %s, posSide: %s, ordType: %s, price: %s, volume: %s, tdMode: %s",
+					req.symbol.c_str(), contract->instIdCode, contract->name.c_str(), side.c_str(), posSide.c_str(), order_type.c_str(), price_str.c_str(), volume_str.c_str(),
+					contract->product == Product::SPOT ? "cash" : "cross"));
 
 				this->reqid += 1;
 				Json okx_req = {
 					{"id", std::to_string(this->reqid)},
 					{"op", "order"},
-					{"args", {args}}
+					{"args", args}
 				};
+				
+				// Log the full request for debugging
+				this->exchange->write_log(Printf("Order request: %s", okx_req.dump().c_str()));
+
 				this->send_packet(okx_req);
 
 				OrderData order = req.create_order_data(orderid, this->exchange_name);
@@ -1212,7 +1256,14 @@ namespace Keen
 					return;
 				}
 
-				Json args = { {"instId", contract->name} };
+				Json args = Json::object();
+				
+				// Use instIdCode as priority, fallback to instId
+				if (contract->instIdCode > 0) {
+					args["instIdCode"] = contract->instIdCode;
+				} else {
+					args["instId"] = contract->name;
+				}
 
 				if (this->local_orderids.count(req.orderid))
 					args["clOrdId"] = req.orderid;

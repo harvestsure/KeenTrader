@@ -368,6 +368,7 @@ namespace Keen
 			}
 			catch (const std::exception& e)
 			{
+				LOGERROR(Printf("wss error with text: %s", text.c_str()));
 				this->on_error(e);
 			}
 		}
