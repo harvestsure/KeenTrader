@@ -70,7 +70,7 @@ namespace Keen
             };
 
             BinanceLinearExchange::BinanceLinearExchange(EventEmitter* event_emitter)
-                : BaseExchange(event_emitter, "BINANCE")
+                : CryptoExchange(event_emitter, "BINANCE")
                 , proxy_port(0)
             {
                 this->rest_api = new BinanceRestApi(this);
@@ -163,6 +163,35 @@ namespace Keen
                 this->user_api->stop();
                 this->md_api->stop();
                 this->trade_api->stop();
+            }
+
+            bool BinanceLinearExchange::set_position_mode(PositionMode mode)
+            {
+                // 首先更新本地状态
+                if (!CryptoExchange::set_position_mode(mode))
+                {
+                    return false;
+                }
+
+                // 调用 REST API 设置持仓模式
+                AString mode_str = (mode == PositionMode::ONE_WAY) ? "true" : "false";
+                this->rest_api->set_position_mode(mode_str);
+                
+                return true;
+            }
+
+            bool BinanceLinearExchange::set_leverage(const AString& symbol, int leverage, const Json& params)
+            {
+                // 首先更新本地状态
+                if (!CryptoExchange::set_leverage(symbol, leverage, params))
+                {
+                    return false;
+                }
+
+                // 调用 REST API 设置杠杆
+                this->rest_api->set_leverage(symbol, leverage);
+                
+                return true;
             }
 
             void BinanceLinearExchange::on_order(const OrderData& order)
@@ -526,6 +555,33 @@ namespace Keen
                 this->request(request);
             }
 
+            void BinanceRestApi::set_position_mode(const AString& mode)
+            {
+                Params params = {{"dualSidePosition", mode}};
+                Request request{
+                    .method = "POST",
+                    .path = "/fapi/v1/positionSideDual",
+                    .params = params,
+                    .callback = std::bind(&BinanceRestApi::on_set_position_mode, this, _1, _2)
+                };
+                this->request(request);
+            }
+
+            void BinanceRestApi::set_leverage(const AString& symbol, int leverage)
+            {
+                Params params = {
+                    {"symbol", symbol},
+                    {"leverage", std::to_string(leverage)}
+                };
+                Request request{
+                    .method = "POST",
+                    .path = "/fapi/v1/leverage",
+                    .params = params,
+                    .callback = std::bind(&BinanceRestApi::on_set_leverage, this, _1, _2)
+                };
+                this->request(request);
+            }
+
             void BinanceRestApi::on_query_account(const Json& packet, const Request& request)
             {
                 // parse assets
@@ -730,8 +786,38 @@ namespace Keen
                 this->exchange->write_log(Printf("keep_user_stream error: %s", exception_value.what()));
             }
 
-            
+            void BinanceRestApi::on_set_position_mode(const Json& packet, const Request& request)
+            {
+                if (packet.contains("dualSidePosition"))
+                {
+                    bool success = packet["dualSidePosition"] == true;
+                    if (success)
+                    {
+                        this->exchange->write_log("设置持仓模式成功");
+                    }
+                    else
+                    {
+                        this->exchange->write_log("设置持仓模式失败");
+                    }
+                }
+            }
 
+            void BinanceRestApi::on_set_leverage(const Json& packet, const Request& request)
+            {
+                if (packet.contains("leverage") && packet.contains("symbol"))
+                {
+                    AString symbol = packet["symbol"];
+                    int leverage = packet["leverage"];
+                    AString msg = Printf("为 %s 设置杠杆成功: %d 倍", symbol.c_str(), leverage);
+                    this->exchange->write_log(msg);
+                }
+                else
+                {
+                    this->exchange->write_log("设置杠杆失败：返回数据错误");
+                }
+            }
+
+            
             BinanceMdApi::BinanceMdApi(BinanceLinearExchange* exchange)
                 : WebsocketClient()
             {

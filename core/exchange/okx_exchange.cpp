@@ -78,7 +78,7 @@ namespace Keen
 
 
 			OkxExchange::OkxExchange(EventEmitter* event_emitter)
-				: BaseExchange(event_emitter, "OKX")
+				: CryptoExchange(event_emitter, "OKX")
 			{
 				default_setting =
 				{
@@ -172,6 +172,35 @@ namespace Keen
 				this->rest_api->stop();
 				this->public_api->stop();
 				this->private_api->stop();
+			}
+
+			bool OkxExchange::set_position_mode(PositionMode mode)
+			{
+				// 首先更新本地状态
+				if (!CryptoExchange::set_position_mode(mode))
+				{
+					return false;
+				}
+
+				// 调用 REST API 设置持仓模式
+				AString mode_str = (mode == PositionMode::ONE_WAY) ? "long_short_mode" : "net_mode";
+				this->rest_api->set_position_mode(mode_str);
+				
+				return true;
+			}
+
+			bool OkxExchange::set_leverage(const AString& symbol, int leverage, const Json& params)
+			{
+				// 首先更新本地状态
+				if (!CryptoExchange::set_leverage(symbol, leverage, params))
+				{
+					return false;
+				}
+
+				// 调用 REST API 设置杠杆
+				this->rest_api->set_leverage(symbol, leverage);
+				
+				return true;
 			}
 
 			void OkxExchange::on_order(const OrderData& order)
@@ -357,6 +386,36 @@ namespace Keen
 				}
 			}
 
+			void OkxRestApi::set_position_mode(const AString& mode)
+			{
+				Json body = {
+					{"posMode", mode}
+				};
+				Request request{
+					.method = "POST",
+					.path = "/api/v5/account/set-positionmode",
+					.data = body.dump(),
+					.callback = std::bind(&OkxRestApi::on_set_position_mode, this, _1, _2)
+				};
+				this->request(request);
+			}
+
+			void OkxRestApi::set_leverage(const AString& symbol, int leverage)
+			{
+				Json body = {
+					{"instId", symbol},
+					{"lever", std::to_string(leverage)},
+					{"mgnMode", "cross"}
+				};
+				Request request{
+					.method = "POST",
+					.path = "/api/v5/account/set-leverage",
+					.data = body.dump(),
+					.callback = std::bind(&OkxRestApi::on_set_leverage, this, _1, _2)
+				};
+				this->request(request);
+			}
+
 			void OkxRestApi::on_query_order(const Json& packet, const Request& request)
 			{
 				for (const Json& order_info : packet["data"])
@@ -444,6 +503,44 @@ namespace Keen
 					this->query_order();
 
 					this->exchange->connect_ws_api();
+				}
+			}
+
+			void OkxRestApi::on_set_position_mode(const Json& packet, const Request& request)
+			{
+				if (packet.contains("code"))
+				{
+					AString code = packet["code"];
+					if (code == "0")
+					{
+						this->exchange->write_log("设置持仓模式成功");
+					}
+					else
+					{
+						AString msg = packet.value("msg", "未知错误");
+						this->exchange->write_log("设置持仓模式失败: " + msg);
+					}
+				}
+			}
+
+			void OkxRestApi::on_set_leverage(const Json& packet, const Request& request)
+			{
+				if (packet.contains("code"))
+				{
+					AString code = packet["code"];
+					if (code == "0" && packet.contains("data") && packet["data"].is_array() && packet["data"].size() > 0)
+					{
+						const Json& data = packet["data"][0];
+						AString symbol = data.value("instId", "");
+						int leverage = std::stoi(data.value("lever", "1"));
+						AString msg = Printf("为 %s 设置杠杆成功: %d 倍", symbol.c_str(), leverage);
+						this->exchange->write_log(msg);
+					}
+					else
+					{
+						AString msg = packet.value("msg", "未知错误");
+						this->exchange->write_log("设置杠杆失败: " + msg);
+					}
 				}
 			}
 

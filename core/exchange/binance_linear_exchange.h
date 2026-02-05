@@ -2,7 +2,7 @@
 
 #include <api/RestClient.h>
 #include <api/WebsocketClient.h>
-#include <engine/exchange.h>
+#include <exchange/crypto_exchange.h>
 #include <map>
 #include <list>
 #include <string>
@@ -22,7 +22,7 @@ namespace Keen
             class BinanceTradeApi;
             class BinanceUserApi;
 
-            class KEEN_EXCHANGE_EXPORT BinanceLinearExchange : public BaseExchange
+            class KEEN_EXCHANGE_EXPORT BinanceLinearExchange : public CryptoExchange
             {
             public:
                 BinanceLinearExchange(EventEmitter* event_emitter);
@@ -44,6 +44,10 @@ namespace Keen
                 void on_contract(const ContractData& contract) override;
                 std::optional<ContractData> get_contract_by_symbol(const AString& symbol);
                 std::optional<ContractData> get_contract_by_name(const AString& name);
+
+                // CryptoExchange 虚函数实现
+                bool set_position_mode(PositionMode mode) override;
+                bool set_leverage(const AString& symbol, int leverage, const Json& params = Json::object()) override;
 
             protected:
                 std::map<AString, OrderData> orders;
@@ -89,6 +93,11 @@ namespace Keen
                 void query_contract();
                 void start_user_stream();
                 void keep_user_stream();
+                
+                // 持仓模式和杠杆设置 API
+                void set_position_mode(const AString& mode);
+                void set_leverage(const AString& symbol, int leverage);
+                
                 void on_query_order(const Json& packet, const Request& request);
                 void on_query_account(const Json& packet, const Request& request);
                 void on_query_time(const Json& packet, const Request& request);
@@ -97,6 +106,8 @@ namespace Keen
                 void on_start_user_stream(const Json& packet, const Request& request);
                 void on_keep_user_stream(const Json& packet, const Request& request);
                 void on_keep_user_stream_error(const std::type_info& exception_type, const std::exception& exception_value, const void* tb, const Request& request);
+                void on_set_position_mode(const Json& packet, const Request& request);
+                void on_set_leverage(const Json& packet, const Request& request);
                 std::list<BarData> query_history(const HistoryRequest& req);
 
             protected:

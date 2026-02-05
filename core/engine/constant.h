@@ -139,6 +139,11 @@ namespace Keen
             TICK
         };
 
+        enum class PositionMode {
+            ONE_WAY,    // 单向持仓模式
+            HEDGE       // 双向/对冲持仓模式
+        };
+
         extern KEEN_ENGINE_EXPORT AString str_direction(Direction direction);
 		extern KEEN_ENGINE_EXPORT AString exchange_to_str(Exchange);
         extern KEEN_ENGINE_EXPORT AString status_to_str(Status);

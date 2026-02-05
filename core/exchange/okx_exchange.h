@@ -2,7 +2,7 @@
 
 #include <api/RestClient.h>
 #include <api/WebsocketClient.h>
-#include <engine/exchange.h>
+#include <exchange/crypto_exchange.h>
 
 using namespace Keen::api;
 using namespace Keen::engine;
@@ -23,7 +23,7 @@ namespace Keen
 			class OkxWebsocketPublicApi;
 			class OkxWebsocketPrivateApi;
 
-			class KEEN_EXCHANGE_EXPORT OkxExchange : public BaseExchange
+			class KEEN_EXCHANGE_EXPORT OkxExchange : public CryptoExchange
 			{
 				friend OkxRestApi;
 				friend OkxWebsocketPublicApi;
@@ -62,6 +62,10 @@ namespace Keen
 				std::optional<ContractData> get_contract_by_name(const AString& name);
 
 				OrderData parse_order_data(const Json& data, const AString& gateway_name);
+
+				// CryptoExchange 虚函数实现
+				bool set_position_mode(PositionMode mode) override;
+				bool set_leverage(const AString& symbol, int leverage, const Json& params = Json::object()) override;
 
 			protected:
 				std::map<AString, OrderData> orders;
@@ -102,10 +106,16 @@ namespace Keen
 				void query_order();
 				void query_time();
 				void query_contract();
+				
+				// 持仓模式和杠杆设置 API
+				void set_position_mode(const AString& mode);
+				void set_leverage(const AString& symbol, int leverage);
 
 				void on_query_order(const Json& packet, const Request& request);
 				void on_query_time(const Json& packet, const Request& request);
 				void on_query_contract(const Json& packet, const Request& request);
+				void on_set_position_mode(const Json& packet, const Request& request);
+				void on_set_leverage(const Json& packet, const Request& request);
 
 				void on_error(const std::exception& ex, const Request& request) override;
 
