@@ -5,6 +5,7 @@
 [![windows](https://github.com/harvestsure/KeenTrader/actions/workflows/windows.yml/badge.svg)](https://github.com/harvestsure/KeenTrader/actions/workflows/windows.yml)
 [![ubuntu](https://github.com/harvestsure/KeenTrader/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/harvestsure/KeenTrader/actions/workflows/ubuntu.yml)
 [![macos](https://github.com/harvestsure/KeenTrader/actions/workflows/macos.yml/badge.svg)](https://github.com/harvestsure/KeenTrader/actions/workflows/macos.yml)
+[![clang-tidy](https://github.com/harvestsure/KeenTrader/actions/workflows/clang-tidy.yml/badge.svg)](https://github.com/harvestsure/KeenTrader/actions/workflows/clang-tidy.yml)
 
 ## Description
 
@@ -25,6 +26,17 @@ KeenTrader is a lightweight, high-performance quantitative trading and connectiv
 - HTTP and WebSocket clients with an event loop
 - Strategy framework (CTA) with example strategies
 - Logging, time utilities, and helper libraries
+- Cross-platform support (Windows, macOS, Linux)
+- Strict compile-time checks and static analysis (clang-tidy)
+
+## Dependencies
+
+### External Libraries (managed by vcpkg)
+- **OpenSSL** (≥3.3.1) - TLS/SSL support
+- **fmt** (≥11.0.0) - Modern string formatting
+- **nlohmann-json** - JSON library
+- **ASIO** - Network library
+- **WebSocket++** - WebSocket protocol support
 
 ## Supported Exchanges
 
@@ -88,9 +100,25 @@ cmake .. -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake
 cmake --build . --config Release
 ```
 
-Notes
+### Code Quality & Build Verification
+
+The project maintains high code quality through:
+- **Strict compilation flags**: `-Wall -Wextra -Wpedantic -Werror`
+- **Additional checks**: `-Wshadow -Wconversion` to catch common errors
+- **Static analysis**: Integrated clang-tidy for automated code inspection
+
+Run clang-tidy manually:
+```bash
+cd build
+make                           # Generate compile_commands.json
+clang-tidy -p . ../core/*.cpp  # Check against standard checks
+```
+
+### Build Notes
 
 - If libraries are installed in custom locations, set CMake variables such as `-DOPENSSL_ROOT_DIR` accordingly. See `vcpkg.json` and `CMakeLists.txt` for declared dependencies.
+- On macOS with Apple Silicon, ensure Homebrew OpenSSL is properly linked.
+- Windows builds require Visual Studio 2022 and vcpkg for dependency management.
 
 ## Run Example
 

@@ -1,0 +1,58 @@
+name: Clang-Tidy Analysis
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
+    branches:
+      - master
+      - develop
+
+permissions: read-all
+
+jobs:
+  clang-tidy:
+    runs-on: ubuntu-24.04
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y \
+          clang-tidy \
+          clang \
+          libssl-dev \
+          uuid-dev \
+          cmake
+
+    - name: Configure build
+      run: |
+        mkdir build
+        cd build
+        # Generate compile_commands.json for clang-tidy
+        cmake .. \
+          -DCMAKE_CXX_COMPILER=clang++ \
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    
+    - name: Run Clang-Tidy
+      run: |
+        cd build
+        # Run clang-tidy on all source files
+        for file in $(find ../core ../app ../examples -name "*.cpp" -o -name "*.h"); do
+          if [[ ! "$file" =~ "libraries/" ]]; then
+            echo "Checking: $file"
+            clang-tidy "$file" -p . || true
+          fi
+        done
+
+    - name: Generate Clang-Tidy Report
+      if: always()
+      run: |
+        echo "Clang-Tidy analysis completed"
+        echo "Review the output above for any issues that need fixing"

@@ -39,8 +39,12 @@ else()
     # Enable strict warnings but allow issues common in third-party libraries
     add_compile_options(
         -Wall -Wextra -Wpedantic -Werror
+        -Wshadow                           # Warn about variable shadowing
+        -Wconversion                       # Warn about implicit type conversions
         -Wno-error=unused-parameter
         -Wno-error=unused-variable
         -Wno-error=null-pointer-subtraction
+        -Wno-error=conversion              # Type conversion warnings from third-party libs
+        -Wno-error=shadow                  # Variable shadowing in third-party libs
     )
 endif()

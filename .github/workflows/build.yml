@@ -1,0 +1,119 @@
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+        description: "Runner OS (macos-latest, ubuntu-24.04, windows-2022)"
+      compiler:
+        required: false
+        type: string
+        description: "Compiler for Linux (gcc-14, clang-16)"
+      build_type:
+        required: false
+        type: string
+        default: "Release"
+        description: "Build configuration (Release, Debug)"
+
+jobs:
+  build:
+    runs-on: ${{ inputs.os }}
+    name: "Build on ${{ inputs.os }} (${{ inputs.compiler || 'default' }})"
+    env:
+      VCPKGGITCOMMITID: 4065f37d0a6628ef17cf6ee15385f9091f1075bc
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    # macOS specific setup
+    - name: "[macOS] Configure libraries"
+      if: runner.os == 'macOS'
+      run: |
+        brew update
+        brew install openssl@3
+
+    # Ubuntu specific setup
+    - name: "[Ubuntu] Configure toolchain"
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        set -e
+        if [[ "${{ inputs.compiler }}" == "clang"* ]]; then
+          sudo apt update
+          sudo apt install -y ${{ inputs.compiler }}
+        elif [[ "${{ inputs.compiler }}" == "gcc"* ]]; then
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+          sudo apt update
+          sudo apt install -y ${{ inputs.compiler }}
+        fi
+
+    - name: "[Ubuntu] Install dependencies"
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt update
+        sudo apt install -y libssl-dev uuid-dev
+
+    # Windows specific setup
+    - name: "[Windows] Cache vcpkg"
+      if: runner.os == 'Windows'
+      uses: actions/cache@v4
+      with:
+        path: |
+          vcpkg/archives
+          vcpkg/packages
+          vcpkg/installed
+          vcpkg/buildtrees
+          vcpkg/downloads
+        key: vcpkg-${{ runner.os }}-${{ env.VCPKGGITCOMMITID }}-${{ hashFiles('**/vcpkg.json') }}
+        restore-keys: |
+          vcpkg-${{ runner.os }}-${{ env.VCPKGGITCOMMITID }}-
+
+    - name: "[Windows] Setup vcpkg"
+      if: runner.os == 'Windows'
+      uses: lukka/run-vcpkg@v11
+      id: runvcpkg
+      with:
+        vcpkgGitCommitId: '${{ env.VCPKGGITCOMMITID }}'
+        vcpkgJsonGlob: '**/vcpkg.json'
+
+    # Build step
+    - name: "Build"
+      shell: bash
+      run: |
+        rm -rf build || true
+        mkdir build
+        cd build
+        
+        # Configure CMake command based on OS
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          CMAKE_TOOLCHAIN="-DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+          cmake $CMAKE_TOOLCHAIN .. -A x64
+        elif [ "${{ runner.os }}" == "Linux" ]; then
+          CMAKE_CXX_COMPILER=""
+          if [ ! -z "${{ inputs.compiler }}" ]; then
+            CMAKE_CXX_COMPILER="-DCMAKE_CXX_COMPILER=${{ inputs.compiler }}"
+          fi
+          cmake $CMAKE_CXX_COMPILER .. -DCMAKE_BUILD_TYPE=${{ inputs.build_type }}
+        else
+          cmake .. -DCMAKE_BUILD_TYPE=${{ inputs.build_type }}
+        fi
+        
+        # Build
+        cmake --build . -j 4 --config ${{ inputs.build_type }}
+        ctest --output-on-failure -C ${{ inputs.build_type }}
+
+    # Also build Debug on macOS if Release was built
+    - name: "[macOS] Build Debug"
+      if: runner.os == 'macOS' && inputs.build_type == 'Release'
+      shell: bash
+      run: |
+        rm -rf build
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Debug
+        cmake --build . -j 4 --config Debug
+        ctest --output-on-failure -C Debug

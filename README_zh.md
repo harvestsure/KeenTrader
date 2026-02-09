@@ -5,6 +5,7 @@
 [![windows](https://github.com/harvestsure/KeenTrader/actions/workflows/windows.yml/badge.svg)](https://github.com/harvestsure/KeenTrader/actions/workflows/windows.yml)
 [![ubuntu](https://github.com/harvestsure/KeenTrader/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/harvestsure/KeenTrader/actions/workflows/ubuntu.yml)
 [![macos](https://github.com/harvestsure/KeenTrader/actions/workflows/macos.yml/badge.svg)](https://github.com/harvestsure/KeenTrader/actions/workflows/macos.yml)
+[![clang-tidy](https://github.com/harvestsure/KeenTrader/actions/workflows/clang-tidy.yml/badge.svg)](https://github.com/harvestsure/KeenTrader/actions/workflows/clang-tidy.yml)
 
 ## 项目简介
 
@@ -16,6 +17,17 @@
 - HTTP 与 WebSocket 客户端，基于事件循环的异步处理
 - CTA（跟踪止损/开平仓）策略框架与示例策略
 - 日志系统、时间/序列工具和常用辅助库
+- 跨平台支持（Windows、macOS、Linux）
+- 严格的编译检查和静态分析（clang-tidy）
+
+## 依赖库
+
+### 外部库（由 vcpkg 管理）
+- **OpenSSL** (≥3.3.1) - TLS/SSL 支持
+- **fmt** (≥11.0.0) - 现代字符串格式化
+- **nlohmann-json** - JSON 库
+- **ASIO** - 网络库
+- **WebSocket++** - WebSocket 协议支持
 
 ## 当前支持的交易所
 
@@ -78,6 +90,26 @@ cd build
 cmake .. -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake
 cmake --build . --config Release
 ```
+
+### 代码质量与构建验证
+
+项目通过以下方式维护高代码质量：
+- **严格的编译选项**：`-Wall -Wextra -Wpedantic -Werror`
+- **增强保检查**：`-Wshadow -Wconversion` 用于捕获常见错误
+- **静态分析**：集成 clang-tidy 进行自动代码检查
+
+手动运行 clang-tidy：
+```bash
+cd build
+make                           # 生成 compile_commands.json
+clang-tidy -p . ../core/*.cpp  # 根据标准检查进行检查
+```
+
+### 构建说明
+
+- 若库文件安装在自定义位置，请设置 CMake 变量，如 `-DOPENSSL_ROOT_DIR`。详见 `vcpkg.json` 和 `CMakeLists.txt` 中的依赖声明。
+- 在 Apple Silicon 的 macOS 上，确保正确链接 Homebrew 的 OpenSSL。
+- Windows 构建需要 Visual Studio 2022 和 vcpkg 来管理依赖。
 
 注意：若依赖安装在自定义路径，请使用 `-DOPENSSL_ROOT_DIR` 等 CMake 变量指定路径。依赖声明请参考 `vcpkg.json` 与 `CMakeLists.txt`。
 

@@ -1,4 +1,4 @@
-name: ubuntu
+name: Ubuntu
 
 on:
   push:
@@ -11,58 +11,14 @@ on:
 permissions: read-all
 
 jobs:
-  ubuntu:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - cc: "gcc-14"
-            cxx: "g++-14"
-            os: "ubuntu-24.04"
-          - cc: "clang-16"
-            cxx: "clang++-16"
-            os: "ubuntu-24.04"
+  build-gcc:
+    uses: ./.github/workflows/build.yml
+    with:
+      os: ubuntu-24.04
+      compiler: g++-14
 
-    name: "${{ matrix.cc }}"
-    runs-on: ${{ matrix.os }}
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
-
-    - name: Set reusable strings
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-
-    - name: Configure toolchain
-      shell: bash
-      run: |
-        set -e
-        if [[ "${{ matrix.cc }}" == "clang"* ]]; then
-          sudo apt update
-          sudo apt install -y ${{ matrix.cc }}
-        elif [[ "${{ matrix.cc }}" == "gcc"* ]]; then
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-          sudo apt update
-          sudo apt install -y ${{ matrix.cxx }}
-        fi
-
-    - name: Install dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y libssl-dev uuid-dev
-
-    - name: Build Release
-      run: |
-        rm -rf build
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
-        cmake --build . -j 4 --config Release
-        ctest --output-on-failure -C Release
-
-#    - name: Bazel Test
-#      working-directory: test
-#      run: bazelisk test //... --config=ci
+  build-clang:
+    uses: ./.github/workflows/build.yml
+    with:
+      os: ubuntu-24.04
+      compiler: clang++-16
