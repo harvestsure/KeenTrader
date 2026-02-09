@@ -15,10 +15,12 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       os: ubuntu-24.04
-      compiler: g++-14
+      c_compiler: gcc-14
+      cxx_compiler: g++-14
 
   build-clang:
     uses: ./.github/workflows/build.yml
     with:
       os: ubuntu-24.04
-      compiler: clang++-16
+      c_compiler: clang-16
+      cxx_compiler: clang++-16

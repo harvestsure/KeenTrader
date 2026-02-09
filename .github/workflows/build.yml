@@ -7,10 +7,14 @@ on:
         required: true
         type: string
         description: "Runner OS (macos-latest, ubuntu-24.04, windows-2022)"
-      compiler:
+      c_compiler:
         required: false
         type: string
-        description: "Compiler for Linux (gcc-14, clang-16)"
+        description: "C compiler for Linux (gcc-14, clang-16)"
+      cxx_compiler:
+        required: false
+        type: string
+        description: "C++ compiler for Linux (g++-14, clang++-16)"
       build_type:
         required: false
         type: string
@@ -42,16 +46,15 @@ jobs:
       shell: bash
       run: |
         set -e
-        if [[ "${{ inputs.compiler }}" == "clang"* ]]; then
-          # For clang++, install the clang package (clang++-16 -> clang-16)
-          PACKAGE_NAME=$(echo "${{ inputs.compiler }}" | sed 's/++//')
+        if [[ "${{ inputs.c_compiler }}" == "clang"* ]]; then
+          # Install clang package
           sudo apt update
-          sudo apt install -y ${PACKAGE_NAME}
-        elif [[ "${{ inputs.compiler }}" == "g++"* ]]; then
-          # For g++, install the g++ package directly
+          sudo apt install -y ${{ inputs.c_compiler }}
+        elif [[ "${{ inputs.c_compiler }}" == "gcc"* ]]; then
+          # Install gcc/g++ from PPA
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
           sudo apt update
-          sudo apt install -y ${{ inputs.compiler }}
+          sudo apt install -y ${{ inputs.cxx_compiler }}
         fi
 
     - name: "[Ubuntu] Install dependencies"
@@ -97,10 +100,8 @@ jobs:
           cmake $CMAKE_TOOLCHAIN .. -A x64
         elif [ "${{ runner.os }}" == "Linux" ]; then
           CMAKE_COMPILERS=""
-          if [ ! -z "${{ inputs.compiler }}" ]; then
-            # Extract C compiler from C++ compiler (e.g., g++-14 -> gcc-14, clang++-16 -> clang-16)
-            CC_COMPILER=$(echo "${{ inputs.compiler }}" | sed -e 's/g++/gcc/' -e 's/clang++/clang/')
-            CMAKE_COMPILERS="-DCMAKE_C_COMPILER=${CC_COMPILER} -DCMAKE_CXX_COMPILER=${{ inputs.compiler }}"
+          if [ ! -z "${{ inputs.cxx_compiler }}" ]; then
+            CMAKE_COMPILERS="-DCMAKE_C_COMPILER=${{ inputs.c_compiler }} -DCMAKE_CXX_COMPILER=${{ inputs.cxx_compiler }}"
           fi
           cmake $CMAKE_COMPILERS .. -DCMAKE_BUILD_TYPE=${{ inputs.build_type }}
         else
