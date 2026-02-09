@@ -28,6 +28,7 @@ namespace Keen
 
 		void RestClient::start(int n/* = 3*/)
 		{
+			(void)n;
 		}
 
 		void RestClient::stop()

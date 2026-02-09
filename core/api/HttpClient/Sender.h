@@ -28,7 +28,7 @@ namespace Keen
 					DoneHandler(Callback handler) : _handler(std::move(handler))
 					{
 					}
-					void operator()(const AString& requestId, const AString& data) override
+					void operator()([[maybe_unused]] const AString& requestId, const AString& data) override
 					{
 						auto handler = std::move(_handler);
 						auto result = Response(data);
@@ -52,13 +52,14 @@ namespace Keen
 						: _handler(std::move(handler))
 					{
 					}
-					void operator()(const AString& requestId, const Error& error) override
+					void operator()([[maybe_unused]] const AString& requestId, const Error& error) override
 					{
 						if (_handler)
 						{
 							_handler(error);
 						}
 					}
+					virtual ~FailHandler() = default;
 
 				private:
 					Callback _handler;
@@ -73,13 +74,14 @@ namespace Keen
 						: _handler(std::move(handler))
 					{
 					}
-					void operator()(const AString& requestId, const std::exception& e) override
+					void operator()([[maybe_unused]] const AString& requestId, const std::exception& e) override
 					{
 						if (_handler)
 						{
 							_handler(e);
 						}
 					}
+					virtual ~ErrorHandler() = default;
 
 				private:
 					Callback _handler;
@@ -94,7 +96,7 @@ namespace Keen
 						: _handler(std::move(handler))
 					{
 					}
-					void operator()(const AString& requestId, const Process& error) override
+					void operator()([[maybe_unused]] const AString& requestId, const Process& error) override
 					{
 						if (_handler)
 						{
@@ -227,7 +229,7 @@ namespace Keen
 			void cancel(const AString& requestId);
 
 		private:
-			void sendRequest(const AString& requestId, const Request& request, HTTPResponseHandler&& callbacks);
+			void sendRequest([[maybe_unused]] const AString& requestId, const Request& request, HTTPResponseHandler&& callbacks);
 
 		public:
 			virtual ~Sender();
@@ -245,7 +247,7 @@ namespace Keen
 			[[nodiscard]] Response sync_request(const Request& request) noexcept;
 
 		private:
-			void storeRequest(const AString& requestId, HTTPResponseHandler&& callbacks);
+			void storeRequest([[maybe_unused]] const AString& requestId, HTTPResponseHandler&& callbacks);
 			void unregisterRequest(const AString& requestId);
 
 		private:

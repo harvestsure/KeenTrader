@@ -205,13 +205,13 @@ namespace Keen
 
 		BarGenerator::BarGenerator(FnMut<void(BarData)> on_bar,
 			int window, FnMut<void(BarData)> on_window_bar, Interval interval)
-			: on_bar(on_bar)
-			, window(window)
+			: bar()
+			, window_bar()
+			, on_bar(on_bar)
 			, on_window_bar(on_window_bar)
+			, window(window)
 			, interval(interval)
 			, interval_count(0)
-			, bar()
-			, window_bar()
 			, last_tick()
 			, last_bar()
 		{

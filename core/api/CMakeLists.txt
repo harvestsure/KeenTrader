@@ -81,7 +81,6 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
 
-
 if(UNIX AND NOT APPLE)
     find_library(UUID_LIB uuid)
     if(UUID_LIB)

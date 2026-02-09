@@ -23,7 +23,7 @@ AString getLevelStr(int level) {
 AString JsonFormat(AString jsonStr) {
     int level = 0;
     AString jsonForMatStr;
-    for(int i=0;i<jsonStr.length();i++){
+    for(size_t i=0;i<jsonStr.length();i++){
         char c = jsonStr.at(i);
         if(level>0&&'\n'==jsonForMatStr.at(jsonForMatStr.length()-1)){
             jsonForMatStr += getLevelStr(level);

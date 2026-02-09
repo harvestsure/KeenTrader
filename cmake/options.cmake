@@ -34,4 +34,13 @@ if(MSVC)
 
     # Turn off CRT warnings:
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+    add_compile_options(/W4 /WX)
+else()
+    # Enable strict warnings but allow issues common in third-party libraries
+    add_compile_options(
+        -Wall -Wextra -Wpedantic -Werror
+        -Wno-error=unused-parameter
+        -Wno-error=unused-variable
+        -Wno-error=null-pointer-subtraction
+    )
 endif()

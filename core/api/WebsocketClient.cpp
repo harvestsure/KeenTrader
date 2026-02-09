@@ -61,6 +61,7 @@ namespace Keen
 		private:
 			void on_socket_init(websocketpp::connection_hdl hdl)
 			{
+				(void)hdl;
 				// m_handle = hdl;
 			}
 
@@ -82,7 +83,7 @@ namespace Keen
 				return ctx;
 			}
 
-			void on_fail(websocketpp::connection_hdl hdl)
+			void on_fail(websocketpp::connection_hdl)
 			{
 				if (m_callback)
 				{
@@ -113,6 +114,7 @@ namespace Keen
 
 			void on_pong(websocketpp::connection_hdl, std::string msg)
 			{
+				(void)msg;
 			}
 
 			void on_close(websocketpp::connection_hdl)
@@ -327,6 +329,7 @@ namespace Keen
 
 		void WebsocketClient::on_packet(const Json& packet)
 		{
+			(void)packet;
 			return;
 		}
 

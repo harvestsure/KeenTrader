@@ -81,27 +81,27 @@ namespace Keen
 			this->on_log(log);
 		}
 
-		AString BaseExchange::send_order(const OrderRequest& req)
+		AString BaseExchange::send_order([[maybe_unused]] const OrderRequest& req)
 		{
 			return "";
 		}
 
-		void BaseExchange::cancel_order(const CancelRequest& req)
+		void BaseExchange::cancel_order([[maybe_unused]] const CancelRequest& req)
 		{
 
 		}
 
-		AString BaseExchange::send_quote(const QuoteRequest& req)
+		AString BaseExchange::send_quote([[maybe_unused]] const QuoteRequest& req)
 		{
 			return "";
 		}
 
-		void BaseExchange::cancel_quote(const CancelRequest& req)
+		void BaseExchange::cancel_quote([[maybe_unused]] const CancelRequest& req)
 		{
 
 		}
 
-		std::list<BarData> BaseExchange::query_history(const HistoryRequest& req)
+		std::list<BarData> BaseExchange::query_history([[maybe_unused]] const HistoryRequest& req)
 		{
 			return {};
 		}

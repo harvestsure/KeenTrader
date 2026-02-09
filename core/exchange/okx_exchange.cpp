@@ -74,7 +74,7 @@ namespace Keen
 
 			std::pair<AString, AString> get_side_pos(Direction direction, Offset offset, bool dualSide);
 
-			static bool g_dualSide = true; // dual-side mode
+			[[maybe_unused]] static bool g_dualSide = true; // dual-side mode
 
 
 			OkxExchange::OkxExchange(EventEmitter* event_emitter)
