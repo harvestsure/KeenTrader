@@ -21,4 +21,4 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       os: ubuntu-24.04
-      compiler: clang++-16
+      compiler: clang++-18
