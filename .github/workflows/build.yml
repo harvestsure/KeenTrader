@@ -43,9 +43,6 @@ jobs:
       run: |
         set -e
         if [[ "${{ inputs.compiler }}" == "clang"* ]]; then
-          # Add LLVM repository for clang
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs) main" -y
           sudo apt update
           sudo apt install -y ${{ inputs.compiler }}
         elif [[ "${{ inputs.compiler }}" == "gcc"* ]]; then
