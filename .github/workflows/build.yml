@@ -43,9 +43,12 @@ jobs:
       run: |
         set -e
         if [[ "${{ inputs.compiler }}" == "clang"* ]]; then
+          # For clang++, install the clang package (clang++-16 -> clang-16)
+          PACKAGE_NAME=$(echo "${{ inputs.compiler }}" | sed 's/++//')
           sudo apt update
-          sudo apt install -y ${{ inputs.compiler }}
-        elif [[ "${{ inputs.compiler }}" == "gcc"* ]]; then
+          sudo apt install -y ${PACKAGE_NAME}
+        elif [[ "${{ inputs.compiler }}" == "g++"* ]]; then
+          # For g++, install the g++ package directly
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
           sudo apt update
           sudo apt install -y ${{ inputs.compiler }}
@@ -93,11 +96,13 @@ jobs:
           CMAKE_TOOLCHAIN="-DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
           cmake $CMAKE_TOOLCHAIN .. -A x64
         elif [ "${{ runner.os }}" == "Linux" ]; then
-          CMAKE_CXX_COMPILER=""
+          CMAKE_COMPILERS=""
           if [ ! -z "${{ inputs.compiler }}" ]; then
-            CMAKE_CXX_COMPILER="-DCMAKE_CXX_COMPILER=${{ inputs.compiler }}"
+            # Extract C compiler from C++ compiler (e.g., g++-14 -> gcc-14, clang++-16 -> clang-16)
+            CC_COMPILER=$(echo "${{ inputs.compiler }}" | sed 's/++//')
+            CMAKE_COMPILERS="-DCMAKE_C_COMPILER=${CC_COMPILER} -DCMAKE_CXX_COMPILER=${{ inputs.compiler }}"
           fi
-          cmake $CMAKE_CXX_COMPILER .. -DCMAKE_BUILD_TYPE=${{ inputs.build_type }}
+          cmake $CMAKE_COMPILERS .. -DCMAKE_BUILD_TYPE=${{ inputs.build_type }}
         else
           cmake .. -DCMAKE_BUILD_TYPE=${{ inputs.build_type }}
         fi
