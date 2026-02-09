@@ -99,7 +99,7 @@ jobs:
           CMAKE_COMPILERS=""
           if [ ! -z "${{ inputs.compiler }}" ]; then
             # Extract C compiler from C++ compiler (e.g., g++-14 -> gcc-14, clang++-16 -> clang-16)
-            CC_COMPILER=$(echo "${{ inputs.compiler }}" | sed 's/++//')
+            CC_COMPILER=$(echo "${{ inputs.compiler }}" | sed -e 's/g++/gcc/' -e 's/clang++/clang/')
             CMAKE_COMPILERS="-DCMAKE_C_COMPILER=${CC_COMPILER} -DCMAKE_CXX_COMPILER=${{ inputs.compiler }}"
           fi
           cmake $CMAKE_COMPILERS .. -DCMAKE_BUILD_TYPE=${{ inputs.build_type }}
