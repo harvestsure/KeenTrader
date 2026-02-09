@@ -1,1 +1,3 @@
 add_subdirectory(r_break_strategy)
+add_subdirectory(dca_strategy)
+add_subdirectory(grid_strategy)

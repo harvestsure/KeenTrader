@@ -2,18 +2,10 @@
 #include <api/Globals.h>
 #include "r_break_strategy.h"
 #include "ArrayManager.h"
-#include<date/date.h>
 
 #define CLASS_NAME "RBreakStrategy"
 
-using namespace std::chrono;
 using namespace std::placeholders;
-
-
-DateTime getDays(const DateTime& datetime)
-{
-	return date::floor<date::days>(datetime);
-}
 
 
 RBreakStrategy::RBreakStrategy(CtaEngine* cta_engine,
@@ -21,10 +13,11 @@ RBreakStrategy::RBreakStrategy(CtaEngine* cta_engine,
 	AString kt_symbol,
 	Json setting)
 	: CtaTemplate(cta_engine, strategy_name, kt_symbol, setting)
+	, am(nullptr)
 	, bg(nullptr)
 {
-	parameters = { "setup_coef", "break_coef", "enter_coef_1", "enter_coef_2", "fixed_size", "donchian_window" };
-	variables = { "buy_break", "sell_setup", "sell_enter", "buy_enter", "buy_setup", "sell_break" };
+	parameters = { "donchian_window", "setup_ratio", "break_ratio", "position_size", "trailing_stop_pct" };
+	variables = { "buy_setup", "sell_setup", "buy_break", "sell_break", "hh", "ll", "range" };
 
 	am = new ArrayManager();
 	bg = new BarGenerator(std::bind(&RBreakStrategy::on_bar, this, _1));
@@ -32,7 +25,10 @@ RBreakStrategy::RBreakStrategy(CtaEngine* cta_engine,
 
 RBreakStrategy::~RBreakStrategy()
 {
-
+	if (am)
+		delete am;
+	if (bg)
+		delete bg;
 }
 
 AString RBreakStrategy::__class__()
@@ -42,143 +38,197 @@ AString RBreakStrategy::__class__()
 
 void RBreakStrategy::on_init()
 {
-	write_log("Strategy initialization");
+	write_log("R-Break Strategy initialized");
+	
+	buy_setup = 0;
+	sell_setup = 0;
+	buy_break = 0;
+	sell_break = 0;
+	hh = 0;
+	ll = 0;
+	range = 0;
+	intra_trade_high = 0;
+	intra_trade_low = 0;
 }
 
 void RBreakStrategy::on_start()
 {
-	write_log("Strategy launch");
-
-	load_bar(1, Interval::MINUTE);
-}
-
-void RBreakStrategy::on_bar(const BarData& bar)
-{
-	this->write_log(Printf("on_bar %s %s O:%.2f H:%.2f L:%.2f C:%.2f",
-		DateTimeToString(bar.datetime).c_str(),
-		bar.symbol.c_str(),
-		bar.open_price,
-		bar.high_price,
-		bar.low_price,
-		bar.close_price));
-		
-	this->cancel_all();
-
-	auto am = this->am;
-	am->update_bar(bar);
-	if (!am->inited())
-		return;
-
-	this->bars.push_back(bar);
-	if (bars.size() <= 2)
-		return;
-	else
-		this->bars.pop_front();
-	const BarData& last_bar = *(++this->bars.rbegin());
-
-	// New Day
-	if (getDays(last_bar.datetime) != getDays(bar.datetime))
-	{
-		if (this->day_open)
-		{
-			this->buy_setup = this->day_low - this->setup_coef * (this->day_high - this->day_close);
-			this->sell_setup = this->day_high + this->setup_coef * (this->day_close - this->day_low);
-
-			this->buy_enter = (this->enter_coef_1 / 2) * (this->day_high + this->day_low) - this->enter_coef_2 * this->day_high;
-			this->sell_enter = (this->enter_coef_1 / 2) * (this->day_high + this->day_low) - this->enter_coef_2 * this->day_low;
-
-			this->buy_break = this->sell_setup + this->break_coef * (this->sell_setup - this->buy_setup);
-			this->sell_break = this->buy_setup - this->break_coef * (this->sell_setup - this->buy_setup);
-		}
-
-		this->day_open = bar.open_price;
-		this->day_high = bar.high_price;
-		this->day_close = bar.close_price;
-		this->day_low = bar.low_price;
-	}
-	// Today
-	else
-	{
-		this->day_high = std::max(this->day_high, bar.high_price);
-		this->day_low = std::min(this->day_low, bar.low_price);
-		this->day_close = bar.close_price;
-	}
-
-	if (!this->sell_setup)
-		return;
-
-	auto result = am->donchian(this->donchian_window);
-	this->tend_high = std::get<0>(result);
-	this->tend_low = std::get<1>(result);
-
-	if (this->pos == 0)
-	{
-		this->intra_trade_low = bar.low_price;
-		this->intra_trade_high = bar.high_price;
-
-		if (this->tend_high > this->sell_setup)
-		{
-			float long_entry = std::max(this->buy_break, this->day_high);
-			this->Buy(long_entry, this->fixed_size, true);
-
-			this->Short(this->sell_enter, this->multiplier * this->fixed_size, true);
-		}
-		else if (this->tend_low < this->buy_setup)
-		{
-			float short_entry = std::min(this->sell_break, this->day_low);
-			this->Short(short_entry, this->fixed_size, true);
-
-			this->Buy(this->buy_enter, this->multiplier * this->fixed_size, true);
-		}
-	}
-
-	else if (this->pos > 0)
-	{
-		this->intra_trade_high = std::max(this->intra_trade_high, bar.high_price);
-		float long_stop = this->intra_trade_high * (1 - this->trailing_long / 100);
-		this->Sell(long_stop, abs(this->pos), true);
-	}
-	else if (this->pos < 0)
-	{
-		this->intra_trade_low = std::min(this->intra_trade_low, bar.low_price);
-		float short_stop = this->intra_trade_low * (1 + this->trailing_short / 100);
-		this->Cover(short_stop, abs(this->pos), true);
-	}
-	
-	this->put_event();
+	write_log("R-Break Strategy started");
+	load_bar(static_cast<float>(donchian_window) * 1.5, Interval::DAILY);
 }
 
 void RBreakStrategy::on_stop()
 {
-	write_log("Strategy Stop");
+	write_log("R-Break Strategy stopped");
+	cancel_all();
+}
 
-	// Close existing position
-// 	if (this->pos > 0)
-// 		this->Sell(bar.close_price * 0.99, abs(this->pos));
-// 	else if (this->pos < 0)
-// 		this->Cover(bar.close_price * 1.01, abs(this->pos));
+void RBreakStrategy::calculate_lines()
+{
+	// Get highest and lowest price in the donchian window
+	auto result = am->donchian(donchian_window);
+	hh = std::get<0>(result);
+	ll = std::get<1>(result);
+	
+	if (hh <= 0 || ll <= 0 || hh == ll)
+		return;
+
+	// Calculate range
+	range = hh - ll;
+
+	// Calculate Setup lines (breakout points)
+	// When price breaks above sell_setup -> enter long; when it breaks below buy_setup -> enter short
+	sell_setup = hh - setup_ratio * range;		// Bullish breakout point
+	buy_setup = ll + setup_ratio * range;		// Bearish breakout point
+
+	// Calculate Break lines (stop-loss points)
+	// Stop-loss for long positions at buy_break; for short positions at sell_break
+	buy_break = ll + break_ratio * range;		// Long stop-loss
+	sell_break = hh - break_ratio * range;		// Short stop-loss
+}
+
+void RBreakStrategy::place_orders(const BarData& bar)
+{
+	// No position: Check for entry signal
+	if (pos == 0)
+	{
+		intra_trade_high = bar.high_price;
+		intra_trade_low = bar.low_price;
+
+		// Long signal: price breaks above sell_setup
+		if (bar.close_price > sell_setup && sell_setup > 0)
+		{
+			AStringList orderids = Buy(bar.close_price, position_size);
+			for (const auto& oid : orderids)
+			{
+				active_orderids.insert(oid);
+			}
+			write_log(Printf("LONG signal: close=%.4f > sell_setup=%.4f", bar.close_price, sell_setup));
+		}
+
+		// Short signal: price breaks below buy_setup
+		else if (bar.close_price < buy_setup && buy_setup > 0)
+		{
+			AStringList orderids = Short(bar.close_price, position_size);
+			for (const auto& oid : orderids)
+			{
+				active_orderids.insert(oid);
+			}
+			write_log(Printf("SHORT signal: close=%.4f < buy_setup=%.4f", bar.close_price, buy_setup));
+		}
+	}
+
+	// Long position: Trailing stop loss
+	else if (pos > 0)
+	{
+		intra_trade_high = std::max(intra_trade_high, bar.high_price);
+		float stop_loss = intra_trade_high * (1.0 - trailing_stop_pct / 100.0);
+
+		// Close if price touches stop loss
+		if (bar.low_price < stop_loss)
+		{
+			AStringList orderids = Sell(bar.close_price, pos);
+			for (const auto& oid : orderids)
+			{
+				active_orderids.insert(oid);
+			}
+			write_log(Printf("LONG exit: trailing stop triggered at %.4f, intra_high=%.4f", stop_loss, intra_trade_high));
+		}
+
+		// Also close if price breaks back below buy_break
+		else if (bar.close_price < buy_break)
+		{
+			AStringList orderids = Sell(bar.close_price, pos);
+			for (const auto& oid : orderids)
+			{
+				active_orderids.insert(oid);
+			}
+			write_log(Printf("LONG exit: break support at buy_break=%.4f", buy_break));
+		}
+	}
+
+	// Short position: Trailing stop loss
+	else if (pos < 0)
+	{
+		intra_trade_low = std::min(intra_trade_low, bar.low_price);
+		float stop_loss = intra_trade_low * (1.0 + trailing_stop_pct / 100.0);
+
+		// Close if price touches stop loss
+		if (bar.high_price > stop_loss)
+		{
+			AStringList orderids = Cover(bar.close_price, -pos);
+			for (const auto& oid : orderids)
+			{
+				active_orderids.insert(oid);
+			}
+			write_log(Printf("SHORT exit: trailing stop triggered at %.4f, intra_low=%.4f", stop_loss, intra_trade_low));
+		}
+
+		// Also close if price breaks back above sell_break
+		else if (bar.close_price > sell_break)
+		{
+			AStringList orderids = Cover(bar.close_price, -pos);
+			for (const auto& oid : orderids)
+			{
+				active_orderids.insert(oid);
+			}
+			write_log(Printf("SHORT exit: break resistance at sell_break=%.4f", sell_break));
+		}
+	}
+}
+
+void RBreakStrategy::on_bar(const BarData& bar)
+{
+	// Update array manager with new bar
+	if (!am)
+		return;
+
+	am->update_bar(bar);
+	if (!am->inited())
+		return;
+
+	// Keep a small history for track
+	bars.push_back(bar);
+	if (bars.size() > 100)
+		bars.pop_front();
+
+	// Calculate the setup/break lines based on donchian channel
+	calculate_lines();
+
+	if (buy_setup <= 0 || sell_setup <= 0)
+		return;
+
+	// Execute trading logic
+	place_orders(bar);
+
+	// Update event for UI display
+	put_event();
 }
 
 void RBreakStrategy::on_tick(const TickData& tick)
 {
-	bg->update_tick(tick);
-
-	static int index = 0;
-
-	if (index == 1) {
-		this->Buy(2100, 0.1);
-	}
-
-	index++;
+	// Convert tick to bar for minute bar tracking
+	if (bg)
+		bg->update_tick(tick);
 }
 
 void RBreakStrategy::on_trade(const TradeData& trade)
 {
-	write_log(Printf("on_trade %f %s", trade.volume, trade.symbol.c_str()));
+	write_log(Printf("Trade executed: %s %s %.4f @ %.4f",
+		trade.direction == Direction::LONG ? "BUY" : "SELL",
+		trade.symbol.c_str(),
+		trade.volume,
+		trade.price));
 }
 
-
-
+void RBreakStrategy::on_order(const OrderData& order)
+{
+	// Track order status changes
+	if (!order.is_active() && active_orderids.count(order.kt_orderid))
+	{
+		active_orderids.erase(order.kt_orderid);
+	}
+}
 
 const char* GetStrategyClass()
 {
@@ -189,4 +239,3 @@ CtaTemplate* GetStrategyInstance(CtaEngine* cta_engine, const char* strategy_nam
 {
 	return new RBreakStrategy(cta_engine, strategy_name, kt_symbol, setting);
 }
-

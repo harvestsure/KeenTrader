@@ -31,43 +31,42 @@ public:
 
 	virtual void on_trade(const TradeData& trade);
 
+	virtual void on_order(const OrderData& order);
 
 protected:
 
-	AString author = "KeKe";
+	AString author = "KeenTrader";
 
-	float setup_coef = 0.25;
-	float break_coef = 0.2;
-	float enter_coef_1 = 1.07;
-	float enter_coef_2 = 0.07;
-	float fixed_size = 1;
-	float donchian_window = 30;
+	// Classic R-Break Parameters
+	int donchian_window = 20;                // Donchian channel period (days)
+	float setup_ratio = 0.35;                // Setup line ratio
+	float break_ratio = 0.07;                // Break line ratio
+	float position_size = 1.0;               // Order size per trade
+	float trailing_stop_pct = 0.5;           // Trailing stop percentage
 
-	float trailing_long = 0.4;
-	float trailing_short = 0.4;
-	float multiplier = 3;
+	// Strategy Variables
+	float buy_setup = 0;                     // Long setup line (entry on breakout)
+	float sell_setup = 0;                    // Short setup line (entry on breakdown)
+	float buy_break = 0;                     // Long stop-loss line
+	float sell_break = 0;                    // Short stop-loss line
 
-	float buy_break = 0;
-	float sell_setup = 0;
-	float sell_enter = 0;
-	float buy_enter = 0;
-	float buy_setup = 0;
-	float sell_break = 0;
+	float hh = 0;                            // Highest price over N days
+	float ll = 0;                            // Lowest price over N days
+	float range = 0;                         // Range over N days (hh - ll)
 
-	float intra_trade_high = 0;
-	float intra_trade_low = 0;
+	float intra_trade_high = 0;              // Intraday high since entry
+	float intra_trade_low = 0;               // Intraday low since entry
 
-	float day_high = 0;
-	float day_open = 0;
-	float day_close = 0;
-	float day_low = 0;
-	float tend_high = 0;
-	float tend_low = 0;
+	AStringSet active_orderids;              // Set of active order IDs
 
 	ArrayManager* am;
 	Keen::engine::BarGenerator* bg;
 
 	std::deque<BarData> bars;
+	
+	// Helper methods
+	void calculate_lines();
+	void place_orders(const BarData& bar);
 };
 
 
@@ -77,4 +76,3 @@ extern "C"
 	KEEN_DECL_EXPORT const char* GetStrategyClass();
 	KEEN_DECL_EXPORT CtaTemplate* GetStrategyInstance(CtaEngine*, const char*, const char*, Json);
 }
-
