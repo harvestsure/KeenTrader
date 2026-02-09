@@ -43,8 +43,12 @@ else()
         -Wconversion                       # Warn about implicit type conversions
         -Wno-error=unused-parameter
         -Wno-error=unused-variable
-        -Wno-error=null-pointer-subtraction
         -Wno-error=conversion              # Type conversion warnings from third-party libs
         -Wno-error=shadow                  # Variable shadowing in third-party libs
     )
+    
+    # Clang-specific options
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_compile_options(-Wno-error=null-pointer-subtraction)
+    endif()
 endif()
