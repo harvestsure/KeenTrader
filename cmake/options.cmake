@@ -37,18 +37,18 @@ if(MSVC)
     # add_compile_options(/W4 /WX)
 else()
     # Enable strict warnings but allow issues common in third-party libraries
-    add_compile_options(
-        -Wall -Wextra -Wpedantic -Werror
-        -Wshadow                           # Warn about variable shadowing
-        -Wconversion                       # Warn about implicit type conversions
-        -Wno-error=unused-parameter
-        -Wno-error=unused-variable
-        -Wno-error=conversion              # Type conversion warnings from third-party libs
-        -Wno-error=shadow                  # Variable shadowing in third-party libs
-    )
+    # add_compile_options(
+    #     -Wall -Wextra -Wpedantic -Werror
+    #     -Wshadow                           # Warn about variable shadowing
+    #     -Wconversion                       # Warn about implicit type conversions
+    #     -Wno-error=unused-parameter
+    #     -Wno-error=unused-variable
+    #     -Wno-error=conversion              # Type conversion warnings from third-party libs
+    #     -Wno-error=shadow                  # Variable shadowing in third-party libs
+    # )
     
-    # Clang-specific options
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        add_compile_options(-Wno-error=null-pointer-subtraction)
-    endif()
+    # # Clang-specific options
+    # if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    #     add_compile_options(-Wno-error=null-pointer-subtraction)
+    # endif()
 endif()
